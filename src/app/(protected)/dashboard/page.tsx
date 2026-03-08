@@ -120,25 +120,14 @@ export default async function DashboardPage() {
 
       <Card>
         <h2 className="text-lg font-semibold mb-4">Budget status</h2>
-        {!hasAnyBudgetBucket ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <p className="text-sm text-white/70 mb-4">
-              You have not set budget buckets yet.
-            </p>
-            <Link href="/settings">
-              <Button>Set budgets in settings</Button>
-            </Link>
-          </div>
-        ) : (
+        {hasAnyBudgetBucket ? (
           <div className="grid gap-4 md:grid-cols-3">
             {budgetBuckets.map((bucket) => {
-              const bucketStatus = activeBudgetStatus?.[bucket.key] as BudgetBucketStatus | null | undefined;
+              const bucketStatus = activeBudgetStatus?.[bucket.key];
               return (
                 <div key={bucket.key} className="rounded-xl border border-white/10 bg-white/5 p-4">
                   <div className="text-sm font-semibold">{bucket.label}</div>
-                  {!bucketStatus ? (
-                    <div className="mt-3 text-sm text-white/50">Set budget</div>
-                  ) : (
+                  {bucketStatus ? (
                     <div className="mt-3 space-y-2">
                       <div className="text-xs text-white/60">Budget: {formatCurrency(bucketStatus.budget)}</div>
                       <div className="text-xs text-white/60">Spent: {formatCurrency(bucketStatus.spent)}</div>
@@ -151,10 +140,21 @@ export default async function DashboardPage() {
                       </div>
                       <div className="text-xs text-white/60">{bucketStatus.percentageUsed}% used</div>
                     </div>
+                  ) : (
+                    <div className="mt-3 text-sm text-white/50">Set budget</div>
                   )}
                 </div>
               );
             })}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <p className="text-sm text-white/70 mb-4">
+              You have not set budget buckets yet.
+            </p>
+            <Link href="/settings">
+              <Button>Set budgets in settings</Button>
+            </Link>
           </div>
         )}
       </Card>

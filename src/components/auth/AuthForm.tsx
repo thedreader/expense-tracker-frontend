@@ -26,6 +26,45 @@ export function AuthForm() {
     password?: string;
   }>({});
 
+  function validateFormInputs(
+    name: string,
+    email: string,
+    password: string
+  ): { name?: string; email?: string; password?: string } {
+    const errors: { name?: string; email?: string; password?: string } = {};
+    
+    if (mode === "register" && !name) {
+      errors.name = "Name is required.";
+    }
+    if (!email) {
+      errors.email = "Email is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = "Enter a valid email address.";
+    }
+    if (!password) {
+      errors.password = "Password is required.";
+    } else if (password.length < 6) {
+      errors.password = "Password must be at least 6 characters.";
+    }
+    
+    return errors;
+  }
+
+  async function handleAuthError(error: unknown): Promise<void> {
+    if (mode === "login" && error instanceof ApiError && error.status === 401) {
+      try {
+        await refreshAuth();
+        router.push("/dashboard");
+        router.refresh();
+        return;
+      } catch (refreshError) {
+        setMessage((refreshError as Error).message);
+        return;
+      }
+    }
+    setMessage((error as Error).message);
+  }
+
   async function onSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
@@ -40,20 +79,7 @@ export function AuthForm() {
     const email = typeof emailValue === "string" ? emailValue.trim() : "";
     const password = typeof passwordValue === "string" ? passwordValue : "";
 
-    const nextFieldErrors: { name?: string; email?: string; password?: string } = {};
-    if (mode === "register" && !name) {
-      nextFieldErrors.name = "Name is required.";
-    }
-    if (!email) {
-      nextFieldErrors.email = "Email is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      nextFieldErrors.email = "Enter a valid email address.";
-    }
-    if (!password) {
-      nextFieldErrors.password = "Password is required.";
-    } else if (password.length < 6) {
-      nextFieldErrors.password = "Password must be at least 6 characters.";
-    }
+    const nextFieldErrors = validateFormInputs(name, email, password);
 
     if (Object.keys(nextFieldErrors).length > 0) {
       setFieldErrors(nextFieldErrors);
@@ -70,18 +96,7 @@ export function AuthForm() {
       router.push("/dashboard");
       router.refresh();
     } catch (error) {
-      if (mode === "login" && error instanceof ApiError && error.status === 401) {
-        try {
-          await refreshAuth();
-          router.push("/dashboard");
-          router.refresh();
-          return;
-        } catch (refreshError) {
-          setMessage((refreshError as Error).message);
-          return;
-        }
-      }
-      setMessage((error as Error).message);
+      await handleAuthError(error);
     } finally {
       setLoading(false);
     }

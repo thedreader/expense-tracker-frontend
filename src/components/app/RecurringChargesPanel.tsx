@@ -97,17 +97,10 @@ export function RecurringChargesPanel({
       ) : (
         <div className="space-y-3">
           {recurringCharges.map((charge) => (
-            <div
+            <button
               key={charge._id}
-              role="button"
-              tabIndex={0}
+              type="button"
               onClick={() => setActive(charge)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  setActive(charge);
-                }
-              }}
               className="w-full text-left rounded-xl border border-white/10 bg-white/5 p-4 transition-all duration-300 ease-out hover:border-white/20 hover:bg-white/10 hover:translate-y-[-1px]"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -144,13 +137,14 @@ export function RecurringChargesPanel({
                   </span>
                 </div>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}
 
       {active ? (
-        <div
+        <dialog
+          open
           className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 transition-opacity duration-200 ${
             isClosing ? "opacity-0" : "opacity-100"
           }`}
@@ -158,8 +152,6 @@ export function RecurringChargesPanel({
           onKeyDown={(event) => {
             if (event.key === "Escape") closeModal();
           }}
-          role="button"
-          tabIndex={0}
         >
           <div
             onClick={(event) => event.stopPropagation()}
@@ -168,8 +160,6 @@ export function RecurringChargesPanel({
                 ? "opacity-0 scale-95 translate-y-2"
                 : "opacity-100 scale-100 translate-y-0"
             }`}
-            role="dialog"
-            aria-modal="true"
             aria-labelledby="modal-title"
           >
             <div className="flex items-center justify-between mb-4">
@@ -285,7 +275,7 @@ export function RecurringChargesPanel({
               </div>
             </form>
           </div>
-        </div>
+        </dialog>
       ) : null}
     </>
   );

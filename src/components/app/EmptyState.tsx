@@ -8,10 +8,10 @@ function EmptyStateBase({
   actionLabel,
   actionHref,
 }: {
-  title: string;
-  description: string;
-  actionLabel?: string;
-  actionHref?: string;
+  readonly title: string;
+  readonly description: string;
+  readonly actionLabel?: string;
+  readonly actionHref?: string;
 }) {
   return (
     <div className="glass rounded-2xl p-8 border border-white/10 text-center">

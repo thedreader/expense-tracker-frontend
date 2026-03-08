@@ -5,8 +5,6 @@ import { getCurrentUser } from "@/lib/user.api";
 
 export default async function AuthPage() {
   const cookieHeader = (await cookies()).toString();
-
-  // console.log(cookieHeader);
   
   try {
     await getCurrentUser(cookieHeader);

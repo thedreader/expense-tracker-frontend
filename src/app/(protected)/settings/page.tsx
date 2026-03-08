@@ -32,8 +32,8 @@ export default async function SettingsPage() {
   async function handleAddCategory(formData: FormData) {
     "use server";
 
-    const name = String(formData.get("name") || "").trim();
-    const budgetTypeValue = String(formData.get("budgetType") || "").trim();
+    const name = typeof formData.get("name") === "string" ? (formData.get("name") as string).trim() : "";
+    const budgetTypeValue = typeof formData.get("budgetType") === "string" ? (formData.get("budgetType") as string).trim() : "";
 
     if (
       budgetTypeValue !== "needs" &&
@@ -55,7 +55,7 @@ export default async function SettingsPage() {
   async function handleDeleteCategory(formData: FormData) {
     "use server";
 
-    const id = String(formData.get("id") || "").trim();
+    const id = typeof formData.get("id") === "string" ? (formData.get("id") as string).trim() : "";
     if (!id) return;
 
     const serverCookieHeader = (await cookies()).toString();

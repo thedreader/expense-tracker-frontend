@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 
@@ -23,15 +23,16 @@ export function NewExpenseForm({
     startDate?: string;
   }>({});
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    const form = event.currentTarget;
+  const handleSubmit = (event: React.SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget as HTMLFormElement;
     const formData = new FormData(form);
     const nextErrors: typeof fieldErrors = {};
 
-    const name = String(formData.get("name") || "").trim();
-    const amount = Number(formData.get("amount") || 0);
-    const category = String(formData.get("category") || "").trim();
-    const date = String(formData.get("date") || "").trim();
+    const name = typeof formData.get("name") === "string" ? (formData.get("name") as string).trim() : "";
+    const amount = Number(formData.get("amount")) || 0;
+    const category = typeof formData.get("category") === "string" ? (formData.get("category") as string).trim() : "";
+    const date = typeof formData.get("date") === "string" ? (formData.get("date") as string).trim() : "";
 
     if (!name) nextErrors.name = "Expense name is required.";
     if (!Number.isFinite(amount) || amount < 1) {
@@ -42,7 +43,7 @@ export function NewExpenseForm({
 
     if (isRecurring) {
       const interval = Number(formData.get("interval") || 0);
-      const startDate = String(formData.get("startDate") || "").trim();
+      const startDate = typeof formData.get("startDate") === "string" ? (formData.get("startDate") as string).trim() : "";
       if (!Number.isFinite(interval) || interval < 1) {
         nextErrors.interval = "Interval must be at least 1.";
       }
