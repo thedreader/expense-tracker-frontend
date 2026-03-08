@@ -1,36 +1,125 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Neon Ledger Frontend
 
-## Getting Started
+Modern, responsive frontend for an expense tracking platform built with **Next.js App Router + TypeScript**.
 
-First, run the development server:
+Track daily spending, manage recurring charges, organize custom categories, and monitor budget buckets (`needs`, `wants`, `investments`) with a clean neon UI.
+
+---
+
+## Stack
+
+- `Next.js 16` (App Router)
+- `React 19`
+- `TypeScript`
+- `Tailwind CSS v4`
+
+---
+
+## Features
+
+- Secure auth pages (register/login) integrated with cookie-based backend auth
+- Protected application routes
+- Dashboard with:
+  - Monthly totals
+  - Category mix
+  - Budget bucket status cards
+- Expense management:
+  - Create, update, delete
+  - Filter/search
+  - Mobile-friendly listing
+- Recurring charges:
+  - Create, edit, stop
+  - Animated modal workflow
+- Category management:
+  - Add/remove categories
+  - Assign budget type (`needs`, `wants`, `investments`)
+- Budget settings:
+  - Set `needs/wants/investments` independently
+- Global loading/error states and improved empty states
+
+---
+
+## Project Structure
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+src/
+  app/
+    auth/
+    (protected)/
+      dashboard/
+      expenses/
+      profile/
+      settings/
+  components/
+    app/
+    auth/
+    ui/
+  lib/
+    apiClient.ts
+    auth.api.ts
+    user.api.ts
+    expense.api.ts
+    category.api.ts
+    budget.api.ts
+  types/
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create `frontend3/.env.local`:
 
-## Learn More
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:5000
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Run Locally
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm install
+npm run dev
+```
 
-## Deploy on Vercel
+Open `http://localhost:3000`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+```bash
+npm run dev      # start dev server
+npm run build    # production build
+npm run start    # run production server
+npm run lint     # lint codebase
+```
+
+---
+
+## Design Notes
+
+- Dark neon theme (`#0D0D0D`, `#00FF85`, `#1E90FF`, `#FF0099`)
+- Responsive layout with mobile bottom navigation
+- Background fixed and non-repeating across scroll
+
+---
+
+## Backend Integration
+
+This frontend is designed to work with a REST backend that exposes:
+
+- `/auth/*`
+- `/user/*`
+- `/expenses/*`
+- `/categories/*`
+- `/budget/*`
+
+All requests are routed through `src/lib/apiClient.ts`.
+
+---
+
+## License
+
+Internal project use.
