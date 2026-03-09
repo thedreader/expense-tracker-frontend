@@ -1,17 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { loginUser, refreshAuth, registerUser } from "@/lib/auth.api";
 import { ApiError } from "@/lib/apiClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { API_BASE_URL } from "@/lib/constants";
 
 function getButtonText(loading: boolean, mode: "login" | "register"): string {
-  if (loading) {
-    return "Submitting...";
-  }
+  if (loading) return "Submitting...";
   return mode === "login" ? "Sign in" : "Create account";
 }
 
@@ -19,6 +18,7 @@ export function AuthForm() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true); // checking existing session
   const [message, setMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{
     name?: string;
@@ -26,13 +26,30 @@ export function AuthForm() {
     password?: string;
   }>({});
 
+  // If user already has valid session, redirect to dashboard
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/user`, {
+      credentials: "include",
+    })
+      .then((res) => {
+        if (res.ok) {
+          router.replace("/dashboard");
+        } else {
+          setChecking(false);
+        }
+      })
+      .catch(() => {
+        setChecking(false);
+      });
+  }, [router]);
+
   function validateFormInputs(
     name: string,
     email: string,
     password: string
   ): { name?: string; email?: string; password?: string } {
     const errors: { name?: string; email?: string; password?: string } = {};
-    
+
     if (mode === "register" && !name) {
       errors.name = "Name is required.";
     }
@@ -46,7 +63,7 @@ export function AuthForm() {
     } else if (password.length < 6) {
       errors.password = "Password must be at least 6 characters.";
     }
-    
+
     return errors;
   }
 
@@ -102,6 +119,15 @@ export function AuthForm() {
     }
   }
 
+  // Show spinner while checking existing session
+  if (checking) {
+    return (
+      <div className="w-full max-w-md flex items-center justify-center min-h-[400px]">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-[var(--accent-1)]" />
+      </div>
+    );
+  }
+
   const buttonText = getButtonText(loading, mode);
 
   return (
@@ -118,9 +144,7 @@ export function AuthForm() {
           onClick={() => setMode("login")}
           aria-pressed={mode === "login"}
           className={`flex-1 rounded-full px-4 py-2 text-sm transition-colors ${
-            mode === "login"
-              ? "text-[#0D0D0D]"
-              : "text-white/70 hover:text-white"
+            mode === "login" ? "text-[#0D0D0D]" : "text-white/70 hover:text-white"
           } relative z-10`}
         >
           Login
@@ -130,9 +154,7 @@ export function AuthForm() {
           onClick={() => setMode("register")}
           aria-pressed={mode === "register"}
           className={`flex-1 rounded-full px-4 py-2 text-sm transition-colors ${
-            mode === "register"
-              ? "text-[#0D0D0D]"
-              : "text-white/70 hover:text-white"
+            mode === "register" ? "text-[#0D0D0D]" : "text-white/70 hover:text-white"
           } relative z-10`}
         >
           Register
@@ -180,7 +202,13 @@ export function AuthForm() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" required aria-invalid={Boolean(fieldErrors.email)} />
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              required
+              aria-invalid={Boolean(fieldErrors.email)}
+            />
             {fieldErrors.email ? (
               <p className="text-xs text-[var(--accent-3)]">{fieldErrors.email}</p>
             ) : null}

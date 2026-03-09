@@ -1,9 +1,12 @@
-import { cookies } from "next/headers";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import { getExpenses, showRecurringCharges } from "@/lib/expense.api";
 import { getCurrentUser } from "@/lib/user.api";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RecurringChargesPanel } from "@/components/app/RecurringChargesPanel";
+import type { Expense, RecurringCharge, User } from "@/types";
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString("en-US", {
@@ -12,19 +15,67 @@ function formatCurrency(amount: number) {
   });
 }
 
-export default async function ProfilePage() {
-  const cookieHeader = (await cookies()).toString();
+export default function ProfilePage() {
+  const [user, setUser] = useState<User | null>(null);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [recurringCharges, setRecurringCharges] = useState<RecurringCharge[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [user, expenses, recurringCharges] = await Promise.all([
-    getCurrentUser(cookieHeader),
-    getExpenses(cookieHeader),
-    showRecurringCharges(cookieHeader),
-  ]);
+  useEffect(() => {
+    let active = true;
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [userData, expensesData, recurringData] = await Promise.all([
+          getCurrentUser(),
+          getExpenses(),
+          showRecurringCharges(),
+        ]);
+        if (!active) return;
+        setUser(userData);
+        setExpenses(expensesData);
+        setRecurringCharges(recurringData);
+      } catch (err) {
+        if (active) {
+          setError((err as Error).message);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+    loadData();
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const lastExpense = [...expenses].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  )[0];
+  const { total, lastExpense } = useMemo(() => {
+    const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const latest = [...expenses].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    )[0];
+    return { total: totalAmount, lastExpense: latest };
+  }, [expenses]);
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-[var(--accent-1)]" />
+      </div>
+    );
+  }
+
+  if (error || !user) {
+    return (
+      <div className="rounded-2xl border border-[var(--accent-3)]/40 bg-[rgba(255,0,153,0.1)] px-4 py-3 text-sm text-white">
+        {error || "Unable to load profile data."}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

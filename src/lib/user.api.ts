@@ -1,20 +1,17 @@
 import { apiClient } from "./apiClient";
 import type { ApiMessage, User } from "@/types";
 
-export function getCurrentUser(cookieHeader?: string) {
+export function getCurrentUser() {
   return apiClient<User>("/user", {
     method: "GET",
-    cookieHeader,
   });
 }
 
 export function updateCurrentUser(
-  payload: { name?: string; email?: string; password?: string },
-  cookieHeader?: string
+  payload: { name?: string; email?: string; password?: string }
 ) {
   return apiClient<ApiMessage>("/user", {
     method: "PUT",
     body: JSON.stringify(payload),
-    cookieHeader,
   });
 }

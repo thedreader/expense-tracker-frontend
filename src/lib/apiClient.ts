@@ -4,7 +4,6 @@ const isBrowser = globalThis.window !== undefined;
 
 export class ApiError extends Error {
   status: number;
-
   constructor(message: string, status: number) {
     super(message);
     this.status = status;
@@ -12,7 +11,6 @@ export class ApiError extends Error {
 }
 
 type ApiClientOptions = RequestInit & {
-  cookieHeader?: string;
   retry?: boolean;
 };
 
@@ -28,20 +26,19 @@ function prepareRequestBody(rest: RequestInit, headers: Headers): void {
     headers.set("Content-Type", "application/json");
   }
 
-  if (
-    rest.body &&
-    typeof rest.body === "object" &&
-    !isBinaryType(rest.body)
-  ) {
+  if (rest.body && typeof rest.body === "object" && !isBinaryType(rest.body)) {
     rest.body = JSON.stringify(rest.body);
   }
 }
 
-async function handleUnauthorized<T>(path: string, options: ApiClientOptions): Promise<T> {
+async function handleUnauthorized<T>(
+  path: string,
+  options: ApiClientOptions
+): Promise<T> {
   try {
     const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: "POST",
-      credentials: "include"
+      credentials: "include",
     });
 
     if (refreshRes.ok) {
@@ -50,13 +47,17 @@ async function handleUnauthorized<T>(path: string, options: ApiClientOptions): P
 
     await fetch(`${API_BASE_URL}/auth/logout`, {
       method: "POST",
-      credentials: "include"
+      credentials: "include",
     });
 
-    globalThis.window.location.href = "/auth";
+    if (isBrowser) {
+      globalThis.window.location.href = "/auth";
+    }
     throw new ApiError("Session expired", 401);
   } catch {
-    globalThis.window.location.href = "/auth";
+    if (isBrowser) {
+      globalThis.window.location.href = "/auth";
+    }
     throw new ApiError("Session expired", 401);
   }
 }
@@ -65,14 +66,10 @@ export async function apiClient<T>(
   path: string,
   options: ApiClientOptions = {}
 ): Promise<T> {
-  const { cookieHeader, headers: inputHeaders, ...rest } = options;
+  const { headers: inputHeaders, ...rest } = options;
   const headers = new Headers(inputHeaders);
 
   prepareRequestBody(rest, headers);
-
-  if (cookieHeader) {
-    headers.set("Cookie", cookieHeader);
-  }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...rest,

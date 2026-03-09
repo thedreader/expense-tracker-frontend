@@ -7,17 +7,15 @@ type UpdateBudgetPayload = {
   investments?: number;
 };
 
-export function updateBudget(payload: UpdateBudgetPayload, cookieHeader?: string) {
+export function updateBudget(payload: UpdateBudgetPayload) {
   return apiClient<ApiMessage>("/budget", {
     method: "PUT",
     body: JSON.stringify(payload),
-    cookieHeader,
   });
 }
 
-export function getBudgetStatus(cookieHeader?: string) {
+export function getBudgetStatus() {
   return apiClient<BudgetStatus | { message: string }>("/budget/status", {
     method: "GET",
-    cookieHeader,
   });
 }

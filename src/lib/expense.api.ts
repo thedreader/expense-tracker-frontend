@@ -16,60 +16,49 @@ type ReccuringChargePayload = ExpensePayload & {
   endDate?: string;
 };
 
-export function getExpenses(cookieHeader?: string) {
+export function getExpenses() {
   return apiClient<Expense[]>("/expenses", {
     method: "GET",
-    cookieHeader,
   });
 }
 
-export function getExpenseById(id: string, cookieHeader?: string) {
+export function getExpenseById(id: string) {
   return apiClient<Expense>(`/expenses/${id}`, {
     method: "GET",
-    cookieHeader,
   });
 }
 
-export function getExpensesByCategory(category: string, cookieHeader?: string) {
+export function getExpensesByCategory(category: string) {
   return apiClient<Expense[]>(`/expenses/category/${category}`, {
     method: "GET",
-    cookieHeader,
   });
 }
 
-export function createExpense(payload: ExpensePayload, cookieHeader?: string) {
+export function createExpense(payload: ExpensePayload) {
   return apiClient<ApiMessage>("/expenses", {
     method: "POST",
     body: JSON.stringify(payload),
-    cookieHeader,
   });
 }
 
 export function reccuringCharge(
-  payload: ReccuringChargePayload,
-  cookieHeader?: string
+  payload: ReccuringChargePayload
 ) {
   return apiClient<ApiMessage>("/expenses/recurringCharge", {
     method: "POST",
     body: JSON.stringify(payload),
-    cookieHeader,
   });
 }
 
-export function showRecurringCharges(cookieHeader?: string) {
+export function showRecurringCharges() {
   return apiClient<RecurringCharge[]>("/expenses/recurringCharges", {
     method: "GET",
-    cookieHeader,
   });
 }
 
-export function recurringChargeStop(
-  recurringChargeId: string,
-  cookieHeader?: string
-) {
+export function recurringChargeStop(recurringChargeId: string) {
   return apiClient<ApiMessage>(`/expenses/recurringCharges/${recurringChargeId}`, {
     method: "DELETE",
-    cookieHeader,
   });
 }
 
@@ -82,31 +71,26 @@ export function editRecurringCharge(
     startDate?: string;
     endDate?: string;
     description?: string;
-  },
-  cookieHeader?: string
+  }
 ) {
   return apiClient<ApiMessage>("/expenses/editRecurringCharge", {
     method: "POST",
     body: JSON.stringify(payload),
-    cookieHeader,
   });
 }
 
 export function updateExpense(
   id: string,
-  payload: Partial<ExpensePayload>,
-  cookieHeader?: string
+  payload: Partial<ExpensePayload>
 ) {
   return apiClient<ApiMessage>(`/expenses/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
-    cookieHeader,
   });
 }
 
-export function deleteExpense(id: string, cookieHeader?: string) {
+export function deleteExpense(id: string) {
   return apiClient<ApiMessage>(`/expenses/${id}`, {
     method: "DELETE",
-    cookieHeader,
   });
 }

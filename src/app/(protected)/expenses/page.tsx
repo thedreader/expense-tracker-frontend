@@ -1,6 +1,8 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   deleteExpense,
   getExpenses,
@@ -14,6 +16,7 @@ import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/app/EmptyState";
 import { PlusIcon } from "@/components/icons";
+import type { Category, Expense } from "@/types";
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString("en-US", {
@@ -22,41 +25,63 @@ function formatCurrency(amount: number) {
   });
 }
 
-export default async function ExpensesPage({
-  searchParams,
-}: {
-  readonly searchParams: Promise<{
-    readonly category?: string;
-    readonly q?: string;
-    readonly page?: string;
-  }>;
-}) {
-  const params = await searchParams;
-  const category = params.category || "All";
-  const query = params.q || "";
-  const requestedPage = Number(params.page || "1");
-  const currentPage = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1;
+export default function ExpensesPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const selectedCategory = searchParams.get("category") || "All";
+  const query = searchParams.get("q") || "";
+  const requestedPage = Number(searchParams.get("page") || "1");
+  const currentPage =
+    Number.isFinite(requestedPage) && requestedPage > 0
+      ? Math.floor(requestedPage)
+      : 1;
+
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const categoriesData = await getCategories();
+        const expensesData =
+          selectedCategory === "All"
+            ? await getExpenses()
+            : await getExpensesByCategory(selectedCategory);
+        if (!active) return;
+        setCategories(categoriesData);
+        setExpenses(Array.isArray(expensesData) ? expensesData : []);
+      } catch (err) {
+        if (active) {
+          setError((err as Error).message);
+          setExpenses([]);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+    loadData();
+    return () => {
+      active = false;
+    };
+  }, [selectedCategory]);
+
   const pageSize = 20;
-  const cookieHeader = (await cookies()).toString();
-  const categories = await getCategories(cookieHeader);
-
-  let expenses = [] as Awaited<ReturnType<typeof getExpenses>>;
-  let error: string | null = null;
-
-  try {
-    expenses =
-      category === "All"
-        ? await getExpenses(cookieHeader)
-        : await getExpensesByCategory(category, cookieHeader);
-  } catch (err) {
-    error = (err as Error).message;
-  }
-
-  const filtered = query
-    ? expenses.filter((expense) =>
-        expense.name.toLowerCase().includes(query.toLowerCase())
-      )
-    : expenses;
+  const filtered = useMemo(
+    () =>
+      query
+        ? expenses.filter((expense) =>
+            expense.name.toLowerCase().includes(query.toLowerCase())
+          )
+        : expenses,
+    [expenses, query]
+  );
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const pageStart = (safeCurrentPage - 1) * pageSize;
@@ -65,21 +90,37 @@ export default async function ExpensesPage({
   const buildPageHref = (page: number) => {
     const queryParams = new URLSearchParams();
     if (query) queryParams.set("q", query);
-    if (category !== "All") queryParams.set("category", category);
+    if (selectedCategory !== "All") queryParams.set("category", selectedCategory);
     if (page > 1) queryParams.set("page", String(page));
     const queryString = queryParams.toString();
     return queryString ? `/expenses?${queryString}` : "/expenses";
   };
 
-  async function handleDelete(formData: FormData) {
-    "use server";
+  const handleFilterSubmit = (formData: FormData) => {
+    const nextQ = String(formData.get("q") || "").trim();
+    const nextCategory = String(formData.get("category") || "All");
+    const queryParams = new URLSearchParams();
+    if (nextQ) queryParams.set("q", nextQ);
+    if (nextCategory && nextCategory !== "All") queryParams.set("category", nextCategory);
+    router.push(queryParams.toString() ? `/expenses?${queryParams.toString()}` : "/expenses");
+  };
 
-    const id = formData.get("id") as string;
-    const serverCookieHeader = (await cookies()).toString();
-    await deleteExpense(id, serverCookieHeader);
-    revalidatePath("/expenses");
-    revalidatePath("/dashboard");
-    revalidatePath("/profile");
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteExpense(id);
+      setExpenses((prev) => prev.filter((expense) => expense._id !== id));
+      router.refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-[var(--accent-1)]" />
+      </div>
+    );
   }
 
   return (
@@ -98,9 +139,12 @@ export default async function ExpensesPage({
       </div>
 
       <Card className="space-y-4">
-        <form className="grid gap-4 md:grid-cols-[1.1fr_0.4fr]">
+        <form
+          className="grid gap-4 md:grid-cols-[1.1fr_0.4fr]"
+          action={handleFilterSubmit}
+        >
           <Input name="q" placeholder="Search by name" defaultValue={query} />
-          <Select name="category" defaultValue={category}>
+          <Select name="category" defaultValue={selectedCategory}>
             <option value="All">All categories</option>
             {categories.map((cat) => (
               <option key={cat._id} value={cat._id}>
@@ -148,12 +192,13 @@ export default async function ExpensesPage({
                 <Link href={`/expenses/${expense._id}`}>
                   <Button variant="outline">Details</Button>
                 </Link>
-                <form action={handleDelete}>
-                  <input type="hidden" name="id" value={expense._id} />
-                  <Button type="submit" variant="ghost">
-                    Delete
-                  </Button>
-                </form>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => handleDelete(expense._id)}
+                >
+                  Delete
+                </Button>
               </div>
             </Card>
           ))}

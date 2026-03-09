@@ -1,5 +1,7 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { getExpenses } from "@/lib/expense.api";
 import { getBudgetStatus } from "@/lib/budget.api";
 import { StatCard } from "@/components/app/StatCard";
@@ -8,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/app/EmptyState";
 import { DashboardIcon, ExpensesIcon, PlusIcon } from "@/components/icons";
-import type { BudgetBucketKey, BudgetBucketStatus } from "@/types";
+import type { BudgetBucketKey, BudgetStatus, Expense } from "@/types";
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString("en-US", {
@@ -30,48 +32,91 @@ function getProgressColor(percentageUsed: number) {
   return "bg-green-500";
 }
 
-export default async function DashboardPage() {
-  const cookieHeader = (await cookies()).toString();
-  let expenses = [] as Awaited<ReturnType<typeof getExpenses>>;
-  let budgetStatus: Awaited<ReturnType<typeof getBudgetStatus>> | null = null;
-  let error: string | null = null;
+export default function DashboardPage() {
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [budgetStatus, setBudgetStatus] = useState<BudgetStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  try {
-    const [expensesData, budgetData] = await Promise.all([
-      getExpenses(cookieHeader),
-      getBudgetStatus(cookieHeader),
-    ]);
-    expenses = expensesData;
-    budgetStatus = budgetData;
-  } catch (err) {
-    error = (err as Error).message;
-  }
+  useEffect(() => {
+    let active = true;
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [expensesData, budgetData] = await Promise.all([
+          getExpenses(),
+          getBudgetStatus(),
+        ]);
+        if (!active) return;
+        setExpenses(expensesData);
+        setBudgetStatus("month" in budgetData ? budgetData : null);
+      } catch (err) {
+        if (active) {
+          setError((err as Error).message);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+    loadData();
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  const now = new Date();
-  const monthlyExpenses = expenses.filter((expense) => {
-    const date = new Date(expense.date);
-    return (
-      date.getMonth() === now.getMonth() &&
-      date.getFullYear() === now.getFullYear()
+  const {
+    totalMonthly,
+    dailyAverage,
+    topCategory,
+    recent,
+    categoryTotals,
+    hasAnyBudgetBucket,
+    currentDay,
+  } = useMemo(() => {
+    const now = new Date();
+    const monthlyExpenses = expenses.filter((expense) => {
+      const date = new Date(expense.date);
+      return (
+        date.getMonth() === now.getMonth() &&
+        date.getFullYear() === now.getFullYear()
+      );
+    });
+
+    const total = monthlyExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const average = monthlyExpenses.length ? total / Math.max(1, now.getDate()) : 0;
+    const totals = monthlyExpenses.reduce<Record<string, number>>((acc, expense) => {
+      acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
+      return acc;
+    }, {});
+    const top = Object.entries(totals).sort((a, b) => b[1] - a[1])[0];
+    const recentExpenses = [...expenses]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 6);
+    const hasBudget = Boolean(
+      budgetStatus?.needs || budgetStatus?.wants || budgetStatus?.investments
     );
-  });
 
-  const totalMonthly = monthlyExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const dailyAverage = monthlyExpenses.length ? totalMonthly / Math.max(1, now.getDate()) : 0;
+    return {
+      totalMonthly: total,
+      dailyAverage: average,
+      topCategory: top,
+      recent: recentExpenses,
+      categoryTotals: totals,
+      hasAnyBudgetBucket: hasBudget,
+      currentDay: now.getDate(),
+    };
+  }, [expenses, budgetStatus]);
 
-  const categoryTotals = monthlyExpenses.reduce<Record<string, number>>((acc, expense) => {
-    acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
-    return acc;
-  }, {});
-
-  const topCategory = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0];
-  const recent = [...expenses]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 6);
-  const activeBudgetStatus = budgetStatus && "month" in budgetStatus ? budgetStatus : null;
-  const hasAnyBudgetBucket = Boolean(
-    activeBudgetStatus?.needs || activeBudgetStatus?.wants || activeBudgetStatus?.investments
-  );
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-[var(--accent-1)]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -105,7 +150,7 @@ export default async function DashboardPage() {
         <StatCard
           label="Average per day"
           value={formatCurrency(dailyAverage)}
-          helper={`Across ${now.getDate()} days`}
+          helper={`Across ${currentDay} days`}
           accent="#1E90FF"
           icon={<ExpensesIcon />}
         />
@@ -123,22 +168,33 @@ export default async function DashboardPage() {
         {hasAnyBudgetBucket ? (
           <div className="grid gap-4 md:grid-cols-3">
             {budgetBuckets.map((bucket) => {
-              const bucketStatus = activeBudgetStatus?.[bucket.key];
+              const bucketStatus = budgetStatus?.[bucket.key];
               return (
-                <div key={bucket.key} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <div
+                  key={bucket.key}
+                  className="rounded-xl border border-white/10 bg-white/5 p-4"
+                >
                   <div className="text-sm font-semibold">{bucket.label}</div>
                   {bucketStatus ? (
                     <div className="mt-3 space-y-2">
-                      <div className="text-xs text-white/60">Budget: {formatCurrency(bucketStatus.budget)}</div>
-                      <div className="text-xs text-white/60">Spent: {formatCurrency(bucketStatus.spent)}</div>
-                      <div className="text-xs text-white/60">Remaining: {formatCurrency(bucketStatus.remaining)}</div>
+                      <div className="text-xs text-white/60">
+                        Budget: {formatCurrency(bucketStatus.budget)}
+                      </div>
+                      <div className="text-xs text-white/60">
+                        Spent: {formatCurrency(bucketStatus.spent)}
+                      </div>
+                      <div className="text-xs text-white/60">
+                        Remaining: {formatCurrency(bucketStatus.remaining)}
+                      </div>
                       <div className="h-2 rounded-full bg-white/10">
                         <div
                           className={`h-2 rounded-full ${getProgressColor(bucketStatus.percentageUsed)}`}
                           style={{ width: `${Math.min(bucketStatus.percentageUsed, 100)}%` }}
                         />
                       </div>
-                      <div className="text-xs text-white/60">{bucketStatus.percentageUsed}% used</div>
+                      <div className="text-xs text-white/60">
+                        {bucketStatus.percentageUsed}% used
+                      </div>
                     </div>
                   ) : (
                     <div className="mt-3 text-sm text-white/50">Set budget</div>
@@ -191,7 +247,9 @@ export default async function DashboardPage() {
                     <Badge>{expense.category}</Badge>
                     <Badge className="text-white/65">{expense.budgetType}</Badge>
                   </div>
-                  <div className="text-sm font-semibold sm:ml-auto">{formatCurrency(expense.amount)}</div>
+                  <div className="text-sm font-semibold sm:ml-auto">
+                    {formatCurrency(expense.amount)}
+                  </div>
                 </div>
               ))}
             </div>
@@ -217,10 +275,15 @@ export default async function DashboardPage() {
                     <div key={category} className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span>{category}</span>
-                        <span className="text-white/60">{total ? formatCurrency(total) : "--"}</span>
+                        <span className="text-white/60">
+                          {total ? formatCurrency(total) : "--"}
+                        </span>
                       </div>
                       <div className="h-2 rounded-full bg-white/10">
-                        <div className="h-2 rounded-full bg-[var(--accent-1)]" style={{ width: `${percent}%` }} />
+                        <div
+                          className="h-2 rounded-full bg-[var(--accent-1)]"
+                          style={{ width: `${percent}%` }}
+                        />
                       </div>
                     </div>
                   );

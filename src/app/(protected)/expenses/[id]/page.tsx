@@ -1,6 +1,7 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+"use client";
+
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import {
   deleteExpense,
   getExpenseById,
@@ -10,63 +11,132 @@ import { getCategories } from "@/lib/category.api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import type { Category, Expense } from "@/types";
 
-type Params = { id: string };
+type UpdateFormState = {
+  name: string;
+  amount: string;
+  category: string;
+  date: string;
+  description: string;
+};
 
-export default async function ExpenseDetailPage({
-  params,
-}: {
-  readonly params: Promise<Params>;
-}) {
-  const { id } = await params;
-  const cookieHeader = (await cookies()).toString();
-  const categories = await getCategories(cookieHeader);
+export default function ExpenseDetailPage() {
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const expenseId = params.id;
 
-  let expense;
-  try {
-    expense = await getExpenseById(id, cookieHeader);
-  } catch {
+  const [expense, setExpense] = useState<Expense | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [formState, setFormState] = useState<UpdateFormState>({
+    name: "",
+    amount: "",
+    category: "",
+    date: "",
+    description: "",
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldError, setFieldError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [expenseData, categoriesData] = await Promise.all([
+          getExpenseById(expenseId),
+          getCategories(),
+        ]);
+        if (!active) return;
+        setExpense(expenseData);
+        setCategories(categoriesData);
+        setFormState({
+          name: expenseData.name,
+          amount: String(expenseData.amount),
+          category: expenseData.categoryId || "",
+          date: new Date(expenseData.date).toISOString().slice(0, 10),
+          description: expenseData.description || "",
+        });
+      } catch {
+        if (active) {
+          setError("Expense not found.");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+    loadData();
+    return () => {
+      active = false;
+    };
+  }, [expenseId]);
+
+  const formattedAmount = useMemo(() => {
+    if (!expense) return "";
+    return expense.amount.toLocaleString("en-US", {
+      style: "currency",
+      currency: "INR",
+    });
+  }, [expense]);
+
+  const onUpdate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setFieldError(null);
+    setError(null);
+
+    const amountValue = Number(formState.amount);
+    if (!formState.name.trim() || !formState.category || !formState.date || !Number.isFinite(amountValue) || amountValue < 1) {
+      setFieldError("Please provide a valid name, amount, category and date.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await updateExpense(expenseId, {
+        name: formState.name.trim(),
+        amount: amountValue,
+        category: formState.category,
+        date: formState.date,
+        description: formState.description,
+      });
+      router.refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onDelete = async () => {
+    setError(null);
+    setDeleting(true);
+    try {
+      await deleteExpense(expenseId);
+      router.replace("/expenses");
+      router.refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-        Expense not found.
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-[var(--accent-1)]" />
       </div>
     );
   }
 
-  async function handleUpdate(formData: FormData) {
-    "use server";
-
-    const expenseId = formData.get("id");
-    if (typeof expenseId !== "string") return;
-    
-    const payload = {
-      name: formData.get("name") as string | undefined,
-      amount: Number(formData.get("amount") || 0),
-      category: formData.get("category") as string | undefined,
-      date: formData.get("date") as string | undefined,
-      description: formData.get("description") as string | undefined,
-    };
-
-    const serverCookieHeader = (await cookies()).toString();
-    await updateExpense(expenseId, payload, serverCookieHeader);
-    revalidatePath(`/expenses/${expenseId}`);
-    revalidatePath("/expenses");
-    revalidatePath("/dashboard");
-    revalidatePath("/profile");
-  }
-
-  async function handleDelete(formData: FormData) {
-    "use server";
-
-    const expenseId = formData.get("id");
-    if (typeof expenseId !== "string") return;
-    
-    const serverCookieHeader = (await cookies()).toString();
-    await deleteExpense(expenseId, serverCookieHeader);
-    revalidatePath("/expenses");
-    revalidatePath("/dashboard");
-    revalidatePath("/profile");
-    redirect("/expenses");
+  if (!expense) {
+    return <div className="rounded-2xl border border-white/10 bg-white/5 p-6">Expense not found.</div>;
   }
 
   return (
@@ -78,6 +148,12 @@ export default async function ExpenseDetailPage({
         </div>
       </div>
 
+      {(error || fieldError) ? (
+        <div className="rounded-2xl border border-[var(--accent-3)]/40 bg-[rgba(255,0,153,0.1)] px-4 py-3 text-sm text-white">
+          {fieldError || error}
+        </div>
+      ) : null}
+
       <Card>
         <div className="space-y-4 mb-6">
           <div className="flex flex-wrap items-center gap-3">
@@ -87,23 +163,20 @@ export default async function ExpenseDetailPage({
               {new Date(expense.date).toLocaleDateString()}
             </span>
           </div>
-          <div className="text-3xl font-semibold">
-            {expense.amount.toLocaleString("en-US", {
-              style: "currency",
-              currency: "INR",
-            })}
-          </div>
+          <div className="text-3xl font-semibold">{formattedAmount}</div>
         </div>
 
-        <form action={handleUpdate} className="space-y-5">
-          <input type="hidden" name="id" value={expense._id} />
+        <form onSubmit={onUpdate} className="space-y-5">
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
               <label htmlFor="name" className="text-sm text-white/80">Expense name</label>
               <input
                 id="name"
                 name="name"
-                defaultValue={expense.name}
+                value={formState.name}
+                onChange={(event) =>
+                  setFormState((prev) => ({ ...prev, name: event.target.value }))
+                }
                 required
                 className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
               />
@@ -116,7 +189,10 @@ export default async function ExpenseDetailPage({
                 type="number"
                 min="1"
                 step="0.01"
-                defaultValue={expense.amount}
+                value={formState.amount}
+                onChange={(event) =>
+                  setFormState((prev) => ({ ...prev, amount: event.target.value }))
+                }
                 required
                 className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
               />
@@ -126,7 +202,10 @@ export default async function ExpenseDetailPage({
               <select
                 id="category"
                 name="category"
-                defaultValue={expense.categoryId || ""}
+                value={formState.category}
+                onChange={(event) =>
+                  setFormState((prev) => ({ ...prev, category: event.target.value }))
+                }
                 required
                 className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
               >
@@ -143,7 +222,10 @@ export default async function ExpenseDetailPage({
                 id="date"
                 name="date"
                 type="date"
-                defaultValue={new Date(expense.date).toISOString().slice(0, 10)}
+                value={formState.date}
+                onChange={(event) =>
+                  setFormState((prev) => ({ ...prev, date: event.target.value }))
+                }
                 required
                 className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
               />
@@ -154,18 +236,24 @@ export default async function ExpenseDetailPage({
             <textarea
               id="description"
               name="description"
-              defaultValue={expense.description || ""}
+              value={formState.description}
+              onChange={(event) =>
+                setFormState((prev) => ({ ...prev, description: event.target.value }))
+              }
               className="min-h-[120px] w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 py-3 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
             />
           </div>
           <div className="flex gap-3">
-            <Button type="submit">Save changes</Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? "Saving..." : "Save changes"}
+            </Button>
           </div>
         </form>
-        <form action={handleDelete} className="mt-3">
-          <input type="hidden" name="id" value={expense._id} />
-          <Button type="submit" variant="ghost">Delete</Button>
-        </form>
+        <div className="mt-3">
+          <Button type="button" variant="ghost" onClick={onDelete} disabled={deleting}>
+            {deleting ? "Deleting..." : "Delete"}
+          </Button>
+        </div>
       </Card>
     </div>
   );

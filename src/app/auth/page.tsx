@@ -1,18 +1,6 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth/AuthForm";
-import { getCurrentUser } from "@/lib/user.api";
 
-export default async function AuthPage() {
-  const cookieHeader = (await cookies()).toString();
-  
-  try {
-    await getCurrentUser(cookieHeader);
-    redirect("/dashboard");
-  } catch {
-    // Keep rendering auth page for anonymous users.
-  }
-
+export default function AuthPage() {
   return (
     <div className="min-h-screen grid lg:grid-cols-[1.05fr_0.95fr]">
       <div className="hidden lg:flex flex-col justify-between p-12">
@@ -37,7 +25,6 @@ export default async function AuthPage() {
           </ul>
         </div>
       </div>
-
       <div className="flex items-center justify-center p-8">
         <AuthForm />
       </div>

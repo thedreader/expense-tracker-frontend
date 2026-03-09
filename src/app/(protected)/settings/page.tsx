@@ -1,83 +1,156 @@
-import { cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
+"use client";
+
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getCurrentUser, updateCurrentUser } from "@/lib/user.api";
 import { createCategory, deleteCategory, getCategories } from "@/lib/category.api";
 import { getBudgetStatus, updateBudget } from "@/lib/budget.api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import type { Category, User } from "@/types";
 
-export default async function SettingsPage() {
-  const cookieHeader = (await cookies()).toString();
-  const [user, categories, budgetStatus] = await Promise.all([
-    getCurrentUser(cookieHeader),
-    getCategories(cookieHeader),
-    getBudgetStatus(cookieHeader),
-  ]);
+type BudgetForm = {
+  needs: string;
+  wants: string;
+  investments: string;
+};
 
-  async function handleUpdate(formData: FormData) {
-    "use server";
+export default function SettingsPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [budgetForm, setBudgetForm] = useState<BudgetForm>({
+    needs: "",
+    wants: "",
+    investments: "",
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-    const payload = {
-      name: formData.get("name") ? (formData.get("name") as string).trim() || undefined : undefined,
-      email: formData.get("email") ? (formData.get("email") as string).trim() || undefined : undefined,
-      password: formData.get("password") ? (formData.get("password") as string).trim() || undefined : undefined,
+  const [profileForm, setProfileForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryBudgetType, setNewCategoryBudgetType] = useState<
+    "needs" | "wants" | "investments"
+  >("needs");
+
+  useEffect(() => {
+    let active = true;
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [userData, categoriesData, budgetStatus] = await Promise.all([
+          getCurrentUser(),
+          getCategories(),
+          getBudgetStatus(),
+        ]);
+        if (!active) return;
+        setUser(userData);
+        setCategories(categoriesData);
+        setProfileForm({ name: userData.name, email: userData.email, password: "" });
+        if ("month" in budgetStatus) {
+          setBudgetForm({
+            needs: budgetStatus.needs?.budget ? String(budgetStatus.needs.budget) : "",
+            wants: budgetStatus.wants?.budget ? String(budgetStatus.wants.budget) : "",
+            investments: budgetStatus.investments?.budget
+              ? String(budgetStatus.investments.budget)
+              : "",
+          });
+        }
+      } catch (err) {
+        if (active) setError((err as Error).message);
+      } finally {
+        if (active) setLoading(false);
+      }
     };
+    loadData();
+    return () => {
+      active = false;
+    };
+  }, []);
 
-    const serverCookieHeader = (await cookies()).toString();
-    await updateCurrentUser(payload, serverCookieHeader);
-    revalidatePath("/settings");
-    revalidatePath("/profile");
-  }
+  const parseBudgetValue = (value: string) => {
+    if (!value.trim()) return undefined;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  };
 
-  async function handleAddCategory(formData: FormData) {
-    "use server";
+  const hasCategoryData = useMemo(() => categories.length > 0, [categories]);
 
-    const name = typeof formData.get("name") === "string" ? (formData.get("name") as string).trim() : "";
-    const budgetTypeValue = typeof formData.get("budgetType") === "string" ? (formData.get("budgetType") as string).trim() : "";
+  const handleUpdateProfile = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    setSuccess(null);
+    setSaving(true);
+    try {
+      await updateCurrentUser({
+        name: profileForm.name.trim() || undefined,
+        email: profileForm.email.trim() || undefined,
+        password: profileForm.password.trim() || undefined,
+      });
+      setProfileForm((prev) => ({ ...prev, password: "" }));
+      setSuccess("Profile updated successfully.");
+      router.refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
-    if (
-      budgetTypeValue !== "needs" &&
-      budgetTypeValue !== "wants" &&
-      budgetTypeValue !== "investments"
-    ) {
+  const handleAddCategory = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    setSuccess(null);
+    const name = newCategoryName.trim();
+    if (!name) {
+      setError("Category name is required.");
       return;
     }
+    setSaving(true);
+    try {
+      const response = await createCategory(name, newCategoryBudgetType);
+      setCategories((prev) => [...prev, response.category].sort((a, b) => a.name.localeCompare(b.name)));
+      setNewCategoryName("");
+      setSuccess("Category added successfully.");
+      router.refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
-    if (!name) return;
+  const handleDeleteCategory = async (id: string) => {
+    setError(null);
+    setSuccess(null);
+    setSaving(true);
+    try {
+      await deleteCategory(id);
+      setCategories((prev) => prev.filter((category) => category._id !== id));
+      setSuccess("Category deleted successfully.");
+      router.refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
-    const serverCookieHeader = (await cookies()).toString();
-    await createCategory(name, budgetTypeValue, serverCookieHeader);
-    revalidatePath("/settings");
-    revalidatePath("/expenses");
-    revalidatePath("/expenses/new");
-  }
-
-  async function handleDeleteCategory(formData: FormData) {
-    "use server";
-
-    const id = typeof formData.get("id") === "string" ? (formData.get("id") as string).trim() : "";
-    if (!id) return;
-
-    const serverCookieHeader = (await cookies()).toString();
-    await deleteCategory(id, serverCookieHeader);
-    revalidatePath("/settings");
-    revalidatePath("/expenses");
-    revalidatePath("/expenses/new");
-  }
-
-  async function handleUpdateBudget(formData: FormData) {
-    "use server";
-
-    const parseValue = (value: FormDataEntryValue | null) => {
-      if (typeof value !== "string" || value.trim() === "") return undefined;
-      const numericValue = Number(value);
-      return Number.isFinite(numericValue) ? numericValue : undefined;
-    };
-
+  const handleUpdateBudget = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    setSuccess(null);
     const payload = {
-      needs: parseValue(formData.get("needs")),
-      wants: parseValue(formData.get("wants")),
-      investments: parseValue(formData.get("investments")),
+      needs: parseBudgetValue(budgetForm.needs),
+      wants: parseBudgetValue(budgetForm.wants),
+      investments: parseBudgetValue(budgetForm.investments),
     };
 
     if (
@@ -85,17 +158,37 @@ export default async function SettingsPage() {
       payload.wants === undefined &&
       payload.investments === undefined
     ) {
+      setError("Provide at least one budget value.");
       return;
     }
 
-    const serverCookieHeader = (await cookies()).toString();
-    await updateBudget(payload, serverCookieHeader);
-    revalidatePath("/settings");
-    revalidatePath("/dashboard");
+    setSaving(true);
+    try {
+      await updateBudget(payload);
+      setSuccess("Budget updated successfully.");
+      router.refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-[var(--accent-1)]" />
+      </div>
+    );
   }
 
-  const activeBudgetStatus =
-    "month" in budgetStatus ? budgetStatus : null;
+  if (!user) {
+    return (
+      <div className="rounded-2xl border border-[var(--accent-3)]/40 bg-[rgba(255,0,153,0.1)] px-4 py-3 text-sm text-white">
+        Unable to load account details.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -104,15 +197,29 @@ export default async function SettingsPage() {
         <h1 className="text-3xl font-semibold">Account settings</h1>
       </div>
 
+      {error ? (
+        <div className="rounded-2xl border border-[var(--accent-3)]/40 bg-[rgba(255,0,153,0.1)] px-4 py-3 text-sm text-white">
+          {error}
+        </div>
+      ) : null}
+      {success ? (
+        <div className="rounded-2xl border border-[var(--accent-1)]/40 bg-[rgba(0,255,133,0.1)] px-4 py-3 text-sm text-white">
+          {success}
+        </div>
+      ) : null}
+
       <Card>
         <h2 className="text-lg font-semibold mb-4">Update details</h2>
-        <form action={handleUpdate} className="space-y-4">
+        <form onSubmit={handleUpdateProfile} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="name" className="text-sm text-white/80">Name</label>
             <input
               id="name"
               name="name"
-              defaultValue={user.name}
+              value={profileForm.name}
+              onChange={(event) =>
+                setProfileForm((prev) => ({ ...prev, name: event.target.value }))
+              }
               className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
             />
           </div>
@@ -122,7 +229,10 @@ export default async function SettingsPage() {
               id="email"
               name="email"
               type="email"
-              defaultValue={user.email}
+              value={profileForm.email}
+              onChange={(event) =>
+                setProfileForm((prev) => ({ ...prev, email: event.target.value }))
+              }
               className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
             />
           </div>
@@ -132,35 +242,44 @@ export default async function SettingsPage() {
               id="password"
               name="password"
               type="password"
+              value={profileForm.password}
+              onChange={(event) =>
+                setProfileForm((prev) => ({ ...prev, password: event.target.value }))
+              }
               placeholder="Leave blank to keep current"
               className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
             />
           </div>
-          <Button type="submit">Save changes</Button>
+          <Button type="submit" disabled={saving}>Save changes</Button>
         </form>
       </Card>
 
       <Card>
         <h2 className="text-lg font-semibold mb-4">Manage categories</h2>
-        <form action={handleAddCategory} className="grid gap-3 sm:grid-cols-[1fr_200px_auto] mb-4">
+        <form onSubmit={handleAddCategory} className="grid gap-3 sm:grid-cols-[1fr_200px_auto] mb-4">
           <input
             name="name"
+            value={newCategoryName}
+            onChange={(event) => setNewCategoryName(event.target.value)}
             placeholder="Add new category"
             className="h-11 flex-1 rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
           />
           <select
             name="budgetType"
-            defaultValue="needs"
+            value={newCategoryBudgetType}
+            onChange={(event) =>
+              setNewCategoryBudgetType(event.target.value as "needs" | "wants" | "investments")
+            }
             className="h-11 rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
           >
             <option value="needs">Needs</option>
             <option value="wants">Wants</option>
             <option value="investments">Investments</option>
           </select>
-          <Button type="submit">Add category</Button>
+          <Button type="submit" disabled={saving}>Add category</Button>
         </form>
 
-        {categories.length === 0 ? (
+        {!hasCategoryData ? (
           <p className="text-sm text-white/50">No categories found.</p>
         ) : (
           <div className="space-y-2">
@@ -176,12 +295,14 @@ export default async function SettingsPage() {
                       {category.budgetType}
                     </span>
                   </div>
-                  <form action={handleDeleteCategory}>
-                    <input type="hidden" name="id" value={category._id} />
-                    <Button type="submit" variant="ghost">
-                      Delete
-                    </Button>
-                  </form>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={saving}
+                    onClick={() => handleDeleteCategory(category._id)}
+                  >
+                    Delete
+                  </Button>
                 </div>
               </div>
             ))}
@@ -191,7 +312,7 @@ export default async function SettingsPage() {
 
       <Card>
         <h2 className="text-lg font-semibold mb-4">Budget buckets</h2>
-        <form action={handleUpdateBudget} className="grid gap-4 md:grid-cols-3">
+        <form onSubmit={handleUpdateBudget} className="grid gap-4 md:grid-cols-3">
           <div className="space-y-2">
             <label htmlFor="needs" className="text-sm text-white/80">Needs</label>
             <input
@@ -200,7 +321,10 @@ export default async function SettingsPage() {
               type="number"
               min="1"
               step="0.01"
-              defaultValue={activeBudgetStatus?.needs?.budget ?? ""}
+              value={budgetForm.needs}
+              onChange={(event) =>
+                setBudgetForm((prev) => ({ ...prev, needs: event.target.value }))
+              }
               placeholder="Optional"
               className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
             />
@@ -213,7 +337,10 @@ export default async function SettingsPage() {
               type="number"
               min="1"
               step="0.01"
-              defaultValue={activeBudgetStatus?.wants?.budget ?? ""}
+              value={budgetForm.wants}
+              onChange={(event) =>
+                setBudgetForm((prev) => ({ ...prev, wants: event.target.value }))
+              }
               placeholder="Optional"
               className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
             />
@@ -226,16 +353,18 @@ export default async function SettingsPage() {
               type="number"
               min="1"
               step="0.01"
-              defaultValue={activeBudgetStatus?.investments?.budget ?? ""}
+              value={budgetForm.investments}
+              onChange={(event) =>
+                setBudgetForm((prev) => ({ ...prev, investments: event.target.value }))
+              }
               placeholder="Optional"
               className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
             />
           </div>
           <div className="md:col-span-3">
-            <Button type="submit">Update budget</Button>
+            <Button type="submit" disabled={saving}>Update budget</Button>
           </div>
         </form>
-
       </Card>
     </div>
   );

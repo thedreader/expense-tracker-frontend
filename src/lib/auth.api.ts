@@ -4,34 +4,29 @@ import type { ApiMessage, AuthResponse } from "@/types";
 export function registerUser(
   name: string,
   email: string,
-  password: string,
-  cookieHeader?: string
+  password: string
 ) {
   return apiClient<AuthResponse>("/auth/register", {
     method: "POST",
     body: JSON.stringify({ name, email, password }),
-    cookieHeader,
   });
 }
 
-export function loginUser(email: string, password: string, cookieHeader?: string) {
+export function loginUser(email: string, password: string) {
   return apiClient<AuthResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
-    cookieHeader,
   });
 }
 
-export function refreshAuth(cookieHeader?: string) {
+export function refreshAuth() {
   return apiClient<AuthResponse>("/auth/refresh", {
     method: "POST",
-    cookieHeader,
   });
 }
 
-export function logoutUser(cookieHeader?: string) {
+export function logoutUser() {
   return apiClient<ApiMessage>("/auth/logout", {
     method: "POST",
-    cookieHeader,
   });
 }
