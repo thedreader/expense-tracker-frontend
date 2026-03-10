@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   deleteExpense,
@@ -85,7 +85,7 @@ export default function ExpenseDetailPage() {
     });
   }, [expense]);
 
-  const onUpdate = async (event: FormEvent<HTMLFormElement>) => {
+  const onUpdate = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFieldError(null);
     setError(null);
@@ -105,6 +105,7 @@ export default function ExpenseDetailPage() {
         date: formState.date,
         description: formState.description,
       });
+      router.replace("/expenses");
       router.refresh();
     } catch (err) {
       setError((err as Error).message);

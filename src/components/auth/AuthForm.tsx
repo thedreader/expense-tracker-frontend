@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { loginUser, refreshAuth, registerUser } from "@/lib/auth.api";
+import { loginUser, registerUser } from "@/lib/auth.api";
 import { ApiError } from "@/lib/apiClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,13 +69,8 @@ export function AuthForm() {
 
   async function handleAuthError(error: unknown): Promise<void> {
     if (mode === "login" && error instanceof ApiError && error.status === 401) {
-      try {
-        await refreshAuth();
-        router.push("/dashboard");
-        router.refresh();
-        return;
-      } catch (refreshError) {
-        setMessage((refreshError as Error).message);
+      if (error.message === "Invalid credentials") {
+        setMessage("Incorrect email or password.");
         return;
       }
     }

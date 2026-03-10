@@ -12,6 +12,7 @@ export class ApiError extends Error {
 
 type ApiClientOptions = RequestInit & {
   retry?: boolean;
+  skipAuthRefresh?: boolean;
 };
 
 function prepareRequestBody(rest: RequestInit, headers: Headers): void {
@@ -66,7 +67,7 @@ export async function apiClient<T>(
   path: string,
   options: ApiClientOptions = {}
 ): Promise<T> {
-  const { headers: inputHeaders, ...rest } = options;
+  const { headers: inputHeaders, skipAuthRefresh, ...rest } = options;
   const headers = new Headers(inputHeaders);
 
   prepareRequestBody(rest, headers);
@@ -82,7 +83,7 @@ export async function apiClient<T>(
   const isJson = contentType.includes("application/json");
   const payload = isJson ? await response.json() : await response.text();
 
-  if (response.status === 401 && isBrowser && !options.retry) {
+  if (response.status === 401 && isBrowser && !options.retry && !skipAuthRefresh) {
     return handleUnauthorized<T>(path, options);
   }
 

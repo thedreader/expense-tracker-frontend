@@ -32,7 +32,6 @@ export default function ProtectedLayout({
       }
     };
 
-    setChecking(true);
     verifySession();
 
     return () => {
