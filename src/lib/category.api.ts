@@ -7,13 +7,10 @@ export function getCategories() {
   });
 }
 
-export function createCategory(
-  name: string,
-  budgetType: "needs" | "wants" | "investments"
-) {
+export function createCategory(name: string) {
   return apiClient<{ message: string; category: Category }>("/categories", {
     method: "POST",
-    body: JSON.stringify({ name, budgetType }),
+    body: JSON.stringify({ name }),
   });
 }
 

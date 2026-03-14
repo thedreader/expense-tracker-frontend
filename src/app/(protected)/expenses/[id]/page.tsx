@@ -17,6 +17,7 @@ type UpdateFormState = {
   name: string;
   amount: string;
   category: string;
+  budgetType: "needs" | "wants" | "investments" | "";
   date: string;
   description: string;
 };
@@ -32,6 +33,7 @@ export default function ExpenseDetailPage() {
     name: "",
     amount: "",
     category: "",
+    budgetType: "",
     date: "",
     description: "",
   });
@@ -58,6 +60,7 @@ export default function ExpenseDetailPage() {
           name: expenseData.name,
           amount: String(expenseData.amount),
           category: expenseData.categoryId || "",
+          budgetType: expenseData.budgetType,
           date: new Date(expenseData.date).toISOString().slice(0, 10),
           description: expenseData.description || "",
         });
@@ -90,21 +93,32 @@ export default function ExpenseDetailPage() {
     setFieldError(null);
     setError(null);
 
+    if (!expense) {
+      setError("Expense not found.");
+      return;
+    }
+
     const amountValue = Number(formState.amount);
-    if (!formState.name.trim() || !formState.category || !formState.date || !Number.isFinite(amountValue) || amountValue < 1) {
-      setFieldError("Please provide a valid name, amount, category and date.");
+    if (!formState.name.trim() || !formState.category || !formState.budgetType || !formState.date || !Number.isFinite(amountValue) || amountValue < 1) {
+      setFieldError("Please provide a valid name, amount, category, budget type and date.");
       return;
     }
 
     setSaving(true);
     try {
-      await updateExpense(expenseId, {
+      const payload: Parameters<typeof updateExpense>[1] = {
         name: formState.name.trim(),
         amount: amountValue,
         category: formState.category,
         date: formState.date,
         description: formState.description,
-      });
+      };
+
+      if (formState.budgetType !== expense.budgetType) {
+        payload.budgetType = formState.budgetType;
+      }
+
+      await updateExpense(expenseId, payload);
       router.replace("/expenses");
       router.refresh();
     } catch (err) {
@@ -215,6 +229,26 @@ export default function ExpenseDetailPage() {
                     {category.name}
                   </option>
                 ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="budgetType" className="text-sm text-white/80">Budget type</label>
+              <select
+                id="budgetType"
+                name="budgetType"
+                value={formState.budgetType}
+                onChange={(event) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    budgetType: event.target.value as "needs" | "wants" | "investments",
+                  }))
+                }
+                required
+                className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+              >
+                <option value="needs">Needs</option>
+                <option value="wants">Wants</option>
+                <option value="investments">Investments</option>
               </select>
             </div>
             <div className="space-y-2">

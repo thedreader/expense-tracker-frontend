@@ -65,7 +65,13 @@ export function RecurringChargesPanel({
       const endDate = typeof endDateValue === "string" ? endDateValue : "";
       const descriptionValue = formData.get("description");
       const description = typeof descriptionValue === "string" ? descriptionValue : "";
-      await editRecurringCharge({
+      const budgetTypeValue = formData.get("budgetType");
+      const budgetType =
+        typeof budgetTypeValue === "string"
+          ? (budgetTypeValue as "needs" | "wants" | "investments")
+          : active.budgetType;
+
+      const payload: Parameters<typeof editRecurringCharge>[0] = {
         recurringChargeId: active._id,
         amount: Number(formData.get("amount") || 0),
         frequency: (typeof frequency === "string" ? frequency : "monthly") as
@@ -77,7 +83,13 @@ export function RecurringChargesPanel({
         startDate,
         endDate,
         description,
-      });
+      };
+
+      if (budgetType !== active.budgetType) {
+        payload.budgetType = budgetType;
+      }
+
+      await editRecurringCharge(payload);
 
       closeModal();
       setTimeout(() => {
@@ -210,6 +222,21 @@ export function RecurringChargesPanel({
                     <option value="weekly">Weekly</option>
                     <option value="monthly">Monthly</option>
                     <option value="yearly">Yearly</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="budgetType" className="text-sm text-white/80">
+                    Budget type
+                  </label>
+                  <select
+                    id="budgetType"
+                    name="budgetType"
+                    defaultValue={active.budgetType}
+                    className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+                  >
+                    <option value="needs">Needs</option>
+                    <option value="wants">Wants</option>
+                    <option value="investments">Investments</option>
                   </select>
                 </div>
                 <div className="space-y-2">

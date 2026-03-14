@@ -18,6 +18,7 @@ export function NewExpenseForm({
     name?: string;
     amount?: string;
     category?: string;
+    budgetType?: string;
     date?: string;
     interval?: string;
     startDate?: string;
@@ -31,6 +32,7 @@ export function NewExpenseForm({
     const name = typeof formData.get("name") === "string" ? (formData.get("name") as string).trim() : "";
     const amount = Number(formData.get("amount")) || 0;
     const category = typeof formData.get("category") === "string" ? (formData.get("category") as string).trim() : "";
+    const budgetType = typeof formData.get("budgetType") === "string" ? (formData.get("budgetType") as string).trim() : "";
     const date = typeof formData.get("date") === "string" ? (formData.get("date") as string).trim() : "";
 
     if (!name) nextErrors.name = "Expense name is required.";
@@ -38,6 +40,7 @@ export function NewExpenseForm({
       nextErrors.amount = "Amount must be at least 1.";
     }
     if (!category) nextErrors.category = "Category is required.";
+    if (!budgetType) nextErrors.budgetType = "Budget type is required.";
     if (!date) nextErrors.date = "Date is required.";
 
     if (isRecurring) {
@@ -117,6 +120,29 @@ export function NewExpenseForm({
           </select>
           {fieldErrors.category ? (
             <p className="text-xs text-[var(--accent-3)]">{fieldErrors.category}</p>
+          ) : null}
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="budgetType" className="text-sm text-white/80">
+            Budget type
+          </label>
+          <select
+            id="budgetType"
+            name="budgetType"
+            defaultValue=""
+            required
+            aria-invalid={Boolean(fieldErrors.budgetType)}
+            className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+          >
+            <option value="" disabled>
+              Select budget type
+            </option>
+            <option value="needs">Needs</option>
+            <option value="wants">Wants</option>
+            <option value="investments">Investments</option>
+          </select>
+          {fieldErrors.budgetType ? (
+            <p className="text-xs text-[var(--accent-3)]">{fieldErrors.budgetType}</p>
           ) : null}
         </div>
         <div className="space-y-2">

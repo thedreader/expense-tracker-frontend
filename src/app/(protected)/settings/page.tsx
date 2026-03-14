@@ -35,9 +35,6 @@ export default function SettingsPage() {
     password: "",
   });
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCategoryBudgetType, setNewCategoryBudgetType] = useState<
-    "needs" | "wants" | "investments"
-  >("needs");
 
   useEffect(() => {
     let active = true;
@@ -115,7 +112,7 @@ export default function SettingsPage() {
     }
     setSaving(true);
     try {
-      const response = await createCategory(name, newCategoryBudgetType);
+      const response = await createCategory(name);
       setCategories((prev) => [...prev, response.category].sort((a, b) => a.name.localeCompare(b.name)));
       setNewCategoryName("");
       setSuccess("Category added successfully.");
@@ -166,6 +163,7 @@ export default function SettingsPage() {
     try {
       await updateBudget(payload);
       setSuccess("Budget updated successfully.");
+      router.replace("/dashboard");
       router.refresh();
     } catch (err) {
       setError((err as Error).message);
@@ -256,7 +254,7 @@ export default function SettingsPage() {
 
       <Card>
         <h2 className="text-lg font-semibold mb-4">Manage categories</h2>
-        <form onSubmit={handleAddCategory} className="grid gap-3 sm:grid-cols-[1fr_200px_auto] mb-4">
+        <form onSubmit={handleAddCategory} className="flex flex-col gap-3 sm:flex-row mb-4">
           <input
             name="name"
             value={newCategoryName}
@@ -264,18 +262,6 @@ export default function SettingsPage() {
             placeholder="Add new category"
             className="h-11 flex-1 rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
           />
-          <select
-            name="budgetType"
-            value={newCategoryBudgetType}
-            onChange={(event) =>
-              setNewCategoryBudgetType(event.target.value as "needs" | "wants" | "investments")
-            }
-            className="h-11 rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
-          >
-            <option value="needs">Needs</option>
-            <option value="wants">Wants</option>
-            <option value="investments">Investments</option>
-          </select>
           <Button type="submit" disabled={saving}>Add category</Button>
         </form>
 
@@ -291,9 +277,6 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-white">{category.name}</span>
-                    <span className="text-xs rounded-full border border-white/15 px-2 py-0.5 text-white/60">
-                      {category.budgetType}
-                    </span>
                   </div>
                   <Button
                     type="button"

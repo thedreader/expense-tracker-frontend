@@ -4,7 +4,8 @@ export type Category = {
   _id: string;
   userId: string;
   name: string;
-  budgetType: "needs" | "wants" | "investments";
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type Expense = {

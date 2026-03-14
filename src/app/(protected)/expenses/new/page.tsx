@@ -9,6 +9,8 @@ import { EmptyState } from "@/components/app/EmptyState";
 import { NewExpenseForm } from "@/components/app/NewExpenseForm";
 import type { Category } from "@/types";
 
+type BudgetType = "needs" | "wants" | "investments";
+
 export default function NewExpensePage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -44,11 +46,25 @@ export default function NewExpensePage() {
 
   const handleCreate = async (formData: FormData) => {
     const isRecurring = formData.get("isRecurring") === "on";
+    const budgetTypeValue = formData.get("budgetType");
+    const budgetType: BudgetType | null =
+      typeof budgetTypeValue === "string" &&
+      (budgetTypeValue === "needs" ||
+        budgetTypeValue === "wants" ||
+        budgetTypeValue === "investments")
+        ? budgetTypeValue
+        : null;
+
+    if (!budgetType) {
+      setError("Budget type is required.");
+      return;
+    }
 
     const payload = {
       name: (formData.get("name") as string) || "",
       amount: Number(formData.get("amount") || 0),
       category: (formData.get("category") as string) || "",
+      budgetType,
       date: (formData.get("date") as string) || "",
       description: (formData.get("description") as string) || "",
     };

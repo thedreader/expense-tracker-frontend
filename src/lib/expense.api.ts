@@ -7,6 +7,16 @@ type ExpensePayload = {
   description?: string;
   category: string;
   date: string;
+  budgetType: "needs" | "wants" | "investments";
+};
+
+type UpdateExpensePayload = {
+  name?: string;
+  amount?: number;
+  description?: string;
+  category?: string;
+  date?: string;
+  budgetType?: "needs" | "wants" | "investments";
 };
 
 type ReccuringChargePayload = ExpensePayload & {
@@ -71,6 +81,7 @@ export function editRecurringCharge(
     startDate?: string;
     endDate?: string;
     description?: string;
+    budgetType?: "needs" | "wants" | "investments";
   }
 ) {
   return apiClient<ApiMessage>("/expenses/editRecurringCharge", {
@@ -81,7 +92,7 @@ export function editRecurringCharge(
 
 export function updateExpense(
   id: string,
-  payload: Partial<ExpensePayload>
+  payload: UpdateExpensePayload
 ) {
   return apiClient<ApiMessage>(`/expenses/${id}`, {
     method: "PUT",
