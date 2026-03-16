@@ -25,11 +25,32 @@ function formatCurrency(amount: number) {
   });
 }
 
+function FilterIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
+  );
+}
+
 export default function ExpensesPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+
   const selectedCategory = searchParams.get("category") || "All";
   const query = searchParams.get("q") || "";
+  const startDateParam = searchParams.get("startDate") || "";
+  const endDateParam = searchParams.get("endDate") || "";
   const requestedPage = Number(searchParams.get("page") || "1");
   const currentPage =
     Number.isFinite(requestedPage) && requestedPage > 0
@@ -40,6 +61,9 @@ export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showDateFilter, setShowDateFilter] = useState(
+    Boolean(startDateParam || endDateParam) // auto-open if dates are in URL
+  );
 
   useEffect(() => {
     let active = true;
@@ -48,10 +72,17 @@ export default function ExpensesPage() {
       setError(null);
       try {
         const categoriesData = await getCategories();
+
+        // Build date filter params to pass to API
+        const dateParams: { startDate?: string; endDate?: string } = {};
+        if (startDateParam) dateParams.startDate = startDateParam;
+        if (endDateParam) dateParams.endDate = endDateParam;
+
         const expensesData =
           selectedCategory === "All"
-            ? await getExpenses()
-            : await getExpensesByCategory(selectedCategory);
+            ? await getExpenses(dateParams)
+            : await getExpensesByCategory(selectedCategory, dateParams);
+
         if (!active) return;
         setCategories(categoriesData);
         setExpenses(Array.isArray(expensesData) ? expensesData : []);
@@ -61,16 +92,12 @@ export default function ExpensesPage() {
           setExpenses([]);
         }
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       }
     };
     loadData();
-    return () => {
-      active = false;
-    };
-  }, [selectedCategory]);
+    return () => { active = false; };
+  }, [selectedCategory, startDateParam, endDateParam]);
 
   const pageSize = 20;
   const filtered = useMemo(
@@ -88,21 +115,36 @@ export default function ExpensesPage() {
   const paginatedExpenses = filtered.slice(pageStart, pageStart + pageSize);
 
   const buildPageHref = (page: number) => {
-    const queryParams = new URLSearchParams();
-    if (query) queryParams.set("q", query);
-    if (selectedCategory !== "All") queryParams.set("category", selectedCategory);
-    if (page > 1) queryParams.set("page", String(page));
-    const queryString = queryParams.toString();
+    const params = new URLSearchParams();
+    if (query) params.set("q", query);
+    if (selectedCategory !== "All") params.set("category", selectedCategory);
+    if (startDateParam) params.set("startDate", startDateParam);
+    if (endDateParam) params.set("endDate", endDateParam);
+    if (page > 1) params.set("page", String(page));
+    const queryString = params.toString();
     return queryString ? `/expenses?${queryString}` : "/expenses";
   };
 
   const handleFilterSubmit = (formData: FormData) => {
     const nextQ = String(formData.get("q") || "").trim();
     const nextCategory = String(formData.get("category") || "All");
-    const queryParams = new URLSearchParams();
-    if (nextQ) queryParams.set("q", nextQ);
-    if (nextCategory && nextCategory !== "All") queryParams.set("category", nextCategory);
-    router.push(queryParams.toString() ? `/expenses?${queryParams.toString()}` : "/expenses");
+    const nextStartDate = String(formData.get("startDate") || "").trim();
+    const nextEndDate = String(formData.get("endDate") || "").trim();
+
+    const params = new URLSearchParams();
+    if (nextQ) params.set("q", nextQ);
+    if (nextCategory && nextCategory !== "All") params.set("category", nextCategory);
+    if (nextStartDate) params.set("startDate", nextStartDate);
+    if (nextEndDate) params.set("endDate", nextEndDate);
+
+    router.push(params.toString() ? `/expenses?${params.toString()}` : "/expenses");
+  };
+
+  const handleClearDates = () => {
+    const params = new URLSearchParams();
+    if (query) params.set("q", query);
+    if (selectedCategory !== "All") params.set("category", selectedCategory);
+    router.push(params.toString() ? `/expenses?${params.toString()}` : "/expenses");
   };
 
   const handleDelete = async (id: string) => {
@@ -114,6 +156,8 @@ export default function ExpensesPage() {
       setError((err as Error).message);
     }
   };
+
+  const hasActiveDateFilter = Boolean(startDateParam || endDateParam);
 
   if (loading) {
     return (
@@ -140,19 +184,90 @@ export default function ExpensesPage() {
 
       <Card className="space-y-4">
         <form
-          className="grid gap-4 md:grid-cols-[1.1fr_0.4fr]"
+          className="space-y-4"
           action={handleFilterSubmit}
         >
-          <Input name="q" placeholder="Search by name" defaultValue={query} />
-          <Select name="category" defaultValue={selectedCategory}>
-            <option value="All">All categories</option>
-            {categories.map((cat) => (
-              <option key={cat._id} value={cat._id}>
-                {cat.name}
-              </option>
-            ))}
-          </Select>
-          <div className="md:col-span-2">
+          {/* Search + filter toggle row */}
+          <div className="grid gap-3 md:grid-cols-[1fr_auto_0.4fr]">
+            <Input
+              name="q"
+              placeholder="Search by name"
+              defaultValue={query}
+            />
+
+            {/* Filter icon button */}
+            <button
+              type="button"
+              onClick={() => setShowDateFilter((prev) => !prev)}
+              className={`relative flex items-center justify-center w-10 h-10 rounded-lg border transition-colors ${
+                hasActiveDateFilter
+                  ? "border-[var(--accent-1)] bg-[var(--accent-1)]/10 text-[var(--accent-1)]"
+                  : "border-white/10 bg-white/5 text-white/60 hover:text-white hover:border-white/20"
+              }`}
+              title="Date filters"
+              aria-label="Toggle date filters"
+            >
+              <FilterIcon />
+              {/* Dot indicator when date filter is active */}
+              {hasActiveDateFilter && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[var(--accent-1)]" />
+              )}
+            </button>
+
+            <Select name="category" defaultValue={selectedCategory}>
+              <option value="All">All categories</option>
+              {categories.map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Date filter panel — hidden by default, shown on toggle */}
+          <div
+            className={`overflow-hidden transition-[max-height,opacity] duration-300 ease-out ${
+              showDateFilter
+                ? "max-h-40 opacity-100"
+                : "max-h-0 opacity-0 pointer-events-none"
+            }`}
+          >
+            <div className="grid gap-3 pt-1 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-xs text-white/50 uppercase tracking-wider">
+                  From
+                </label>
+                <Input
+                  name="startDate"
+                  type="date"
+                  defaultValue={startDateParam}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-white/50 uppercase tracking-wider">
+                  To
+                </label>
+                <Input
+                  name="endDate"
+                  type="date"
+                  defaultValue={endDateParam}
+                />
+              </div>
+            </div>
+
+            {/* Clear dates — only shown when dates are active */}
+            {hasActiveDateFilter && (
+              <button
+                type="button"
+                onClick={handleClearDates}
+                className="mt-2 text-xs text-white/50 hover:text-white underline underline-offset-2 transition-colors"
+              >
+                Clear date filters
+              </button>
+            )}
+          </div>
+
+          <div>
             <Button type="submit" variant="outline">
               Apply filters
             </Button>
@@ -176,7 +291,10 @@ export default function ExpensesPage() {
       ) : (
         <div className="grid gap-4">
           {paginatedExpenses.map((expense) => (
-            <Card key={expense._id} className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+            <Card
+              key={expense._id}
+              className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4"
+            >
               <div className="sm:min-w-[200px]">
                 <div className="text-sm font-semibold">{expense.name}</div>
                 <div className="text-xs text-white/60">
@@ -187,7 +305,9 @@ export default function ExpensesPage() {
                 <Badge>{expense.category}</Badge>
                 <Badge className="text-white/65">{expense.budgetType}</Badge>
               </div>
-              <div className="text-sm font-semibold sm:ml-auto">{formatCurrency(expense.amount)}</div>
+              <div className="text-sm font-semibold sm:ml-auto">
+                {formatCurrency(expense.amount)}
+              </div>
               <div className="flex flex-wrap gap-2">
                 <Link href={`/expenses/${expense._id}`}>
                   <Button variant="outline">Details</Button>
@@ -202,6 +322,7 @@ export default function ExpensesPage() {
               </div>
             </Card>
           ))}
+
           {totalPages > 1 ? (
             <div className="flex items-center justify-end gap-2">
               {safeCurrentPage === 1 ? (

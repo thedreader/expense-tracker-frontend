@@ -1,6 +1,11 @@
 import { apiClient } from "./apiClient";
 import type { ApiMessage, Expense, RecurringCharge } from "@/types";
 
+type DateFilterParams = {
+  startDate?: string;
+  endDate?: string;
+};
+
 type ExpensePayload = {
   name: string;
   amount: number;
@@ -26,8 +31,17 @@ type ReccuringChargePayload = ExpensePayload & {
   endDate?: string;
 };
 
-export function getExpenses() {
-  return apiClient<Expense[]>("/expenses", {
+function buildQueryString(params?: DateFilterParams): string {
+  if (!params) return "";
+  const query = new URLSearchParams();
+  if (params.startDate) query.set("startDate", params.startDate);
+  if (params.endDate) query.set("endDate", params.endDate);
+  const queryString = query.toString();
+  return queryString ? `?${queryString}` : "";
+}
+
+export function getExpenses(params?: DateFilterParams) {
+  return apiClient<Expense[]>(`/expenses${buildQueryString(params)}`, {
     method: "GET",
   });
 }
@@ -38,8 +52,8 @@ export function getExpenseById(id: string) {
   });
 }
 
-export function getExpensesByCategory(category: string) {
-  return apiClient<Expense[]>(`/expenses/category/${category}`, {
+export function getExpensesByCategory(category: string, params?: DateFilterParams) {
+  return apiClient<Expense[]>(`/expenses/category/${category}${buildQueryString(params)}`, {
     method: "GET",
   });
 }
@@ -51,9 +65,7 @@ export function createExpense(payload: ExpensePayload) {
   });
 }
 
-export function reccuringCharge(
-  payload: ReccuringChargePayload
-) {
+export function reccuringCharge(payload: ReccuringChargePayload) {
   return apiClient<ApiMessage>("/expenses/recurringCharge", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -72,28 +84,23 @@ export function recurringChargeStop(recurringChargeId: string) {
   });
 }
 
-export function editRecurringCharge(
-  payload: {
-    recurringChargeId: string;
-    amount?: number;
-    frequency?: "daily" | "weekly" | "monthly" | "yearly";
-    interval?: number;
-    startDate?: string;
-    endDate?: string;
-    description?: string;
-    budgetType?: "needs" | "wants" | "investments";
-  }
-) {
+export function editRecurringCharge(payload: {
+  recurringChargeId: string;
+  amount?: number;
+  frequency?: "daily" | "weekly" | "monthly" | "yearly";
+  interval?: number;
+  startDate?: string;
+  endDate?: string;
+  description?: string;
+  budgetType?: "needs" | "wants" | "investments";
+}) {
   return apiClient<ApiMessage>("/expenses/editRecurringCharge", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
-export function updateExpense(
-  id: string,
-  payload: UpdateExpensePayload
-) {
+export function updateExpense(id: string, payload: UpdateExpensePayload) {
   return apiClient<ApiMessage>(`/expenses/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
