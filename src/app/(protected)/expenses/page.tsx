@@ -298,7 +298,7 @@ export default function ExpensesPage() {
               <div className="sm:min-w-[200px]">
                 <div className="text-sm font-semibold">{expense.name}</div>
                 <div className="text-xs text-white/60">
-                  {new Date(expense.date).toLocaleDateString()}
+                  {new Date(expense.date).toLocaleDateString("en-GB")}
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
