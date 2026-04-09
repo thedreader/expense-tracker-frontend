@@ -68,3 +68,46 @@ export type BudgetStatus = {
   wants: BudgetBucketStatus | null;
   investments: BudgetBucketStatus | null;
 };
+
+export type AnalyticsPeriod = {
+  view: "daily" | "weekly" | "monthly" | "yearly";
+  label: string;
+  sub: string;
+  start: string;
+  end: string;
+};
+
+export type AnalyticsSummary = {
+  total: number;
+  needs: number;
+  wants: number;
+  investments: number;
+  transactionCount: number;
+};
+
+export type AnalyticsChartBar = {
+  label: string;
+  total: number;
+  needs: number;
+  wants: number;
+  investments: number;
+};
+
+export type AnalyticsCategoryBreakdown = {
+  category: string;
+  total: number;
+  percentage: number;
+};
+
+export type AnalyticsResponse = {
+  period: AnalyticsPeriod;
+  summary: AnalyticsSummary;
+  chartData: AnalyticsChartBar[];
+  categoryBreakdown: AnalyticsCategoryBreakdown[];
+  expenses: Expense[];
+  budgetStatus?: {
+    needs: BudgetBucketStatus | null;
+    wants: BudgetBucketStatus | null;
+    investments: BudgetBucketStatus | null;
+  };
+};

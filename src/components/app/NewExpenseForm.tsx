@@ -24,7 +24,7 @@ export function NewExpenseForm({
     startDate?: string;
   }>({});
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.SyntheticEvent<HTMLFormElement>) => {
     const form = event.currentTarget as HTMLFormElement;
     const formData = new FormData(form);
     const nextErrors: typeof fieldErrors = {};

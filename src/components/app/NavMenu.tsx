@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  AnalyticsIcon,
   DashboardIcon,
   ExpensesIcon,
   PlusIcon,
@@ -13,6 +14,7 @@ import {
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: DashboardIcon },
   { href: "/expenses", label: "Expenses", icon: ExpensesIcon },
+  { href: "/analytics", label: "Analytics", icon: AnalyticsIcon },
   { href: "/expenses/new", label: "New expense", icon: PlusIcon },
   { href: "/profile", label: "Profile", icon: ProfileIcon },
   { href: "/settings", label: "Settings", icon: SettingsIcon },
@@ -86,7 +88,7 @@ export function MobileNavMenu() {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[rgba(10,10,10,0.92)] backdrop-blur-md">
-      <div className="grid grid-cols-5 px-2 py-2">
+      <div className="grid grid-cols-6 px-2 py-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = item.href === activeHref;
