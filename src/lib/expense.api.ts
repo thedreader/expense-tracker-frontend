@@ -7,12 +7,12 @@ type DateFilterParams = {
 };
 
 type ExpensePayload = {
-  name: string;
+  name?: string;
   amount: number;
   description?: string;
   category: string;
   date: string;
-  budgetType: "needs" | "wants" | "investments";
+  budgetType?: "needs" | "wants" | "investments";
 };
 
 type UpdateExpensePayload = {

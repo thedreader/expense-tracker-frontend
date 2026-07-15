@@ -2,21 +2,25 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createExpense, reccuringCharge } from "@/lib/expense.api";
+import { createExpense, getExpenses } from "@/lib/expense.api";
 import { getCategories } from "@/lib/category.api";
+import {
+  getMostRecentBudgetType,
+  getTodayInputDate,
+  rankQuickCategories,
+} from "@/lib/expense.utils";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/app/EmptyState";
 import { NewExpenseForm } from "@/components/app/NewExpenseForm";
-import type { Category } from "@/types";
-
-type BudgetType = "needs" | "wants" | "investments";
+import type { Category, Expense } from "@/types";
 
 export default function NewExpensePage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const today = useMemo(() => getTodayInputDate(), []);
 
   useEffect(() => {
     let active = true;
@@ -24,9 +28,13 @@ export default function NewExpensePage() {
       setLoading(true);
       setError(null);
       try {
-        const data = await getCategories();
+        const [categoriesData, expensesData] = await Promise.all([
+          getCategories(),
+          getExpenses(),
+        ]);
         if (active) {
-          setCategories(data);
+          setCategories(categoriesData);
+          setExpenses(expensesData);
         }
       } catch (err) {
         if (active) {
@@ -44,49 +52,34 @@ export default function NewExpensePage() {
     };
   }, []);
 
-  const handleCreate = async (formData: FormData) => {
-    const isRecurring = formData.get("isRecurring") === "on";
-    const budgetTypeValue = formData.get("budgetType");
-    const budgetType: BudgetType | null =
-      typeof budgetTypeValue === "string" &&
-      (budgetTypeValue === "needs" ||
-        budgetTypeValue === "wants" ||
-        budgetTypeValue === "investments")
-        ? budgetTypeValue
-        : null;
+  const quickCategories = useMemo(
+    () => rankQuickCategories(categories, expenses),
+    [categories, expenses],
+  );
+  const defaultBudgetType = useMemo(
+    () => getMostRecentBudgetType(expenses),
+    [expenses],
+  );
 
-    if (!budgetType) {
-      setError("Budget type is required.");
-      return;
-    }
+  const handleCreate = async (formData: FormData) => {
+    const categoryId = String(formData.get("category") || "");
+    const category = categories.find((item) => item._id === categoryId);
+    const name = String(formData.get("name") || "").trim();
 
     const payload = {
-      name: (formData.get("name") as string) || "",
+      name: name || category?.name || "",
       amount: Number(formData.get("amount") || 0),
-      category: (formData.get("category") as string) || "",
-      budgetType,
+      category: categoryId,
+      budgetType: String(formData.get("budgetType") || defaultBudgetType) as
+        | "needs"
+        | "wants"
+        | "investments",
       date: (formData.get("date") as string) || "",
       description: (formData.get("description") as string) || "",
     };
 
     try {
-      if (isRecurring) {
-        const endDateValue = formData.get("endDate");
-        const endDate =
-          typeof endDateValue === "string" && endDateValue.trim().length > 0
-            ? endDateValue
-            : undefined;
-
-        await reccuringCharge({
-          ...payload,
-          frequency: (formData.get("frequency") as string) || "",
-          interval: Number(formData.get("interval") || 1),
-          startDate: (formData.get("startDate") as string) || "",
-          endDate,
-        });
-      } else {
-        await createExpense(payload);
-      }
+      await createExpense(payload);
       router.replace("/expenses");
       router.refresh();
     } catch (err) {
@@ -124,7 +117,13 @@ export default function NewExpensePage() {
             actionHref="/settings"
           />
         ) : (
-          <NewExpenseForm action={handleCreate} today={today} categories={categories} />
+          <NewExpenseForm
+            action={handleCreate}
+            today={today}
+            categories={categories}
+            quickCategories={quickCategories}
+            defaultBudgetType={defaultBudgetType}
+          />
         )}
       </Card>
     </div>

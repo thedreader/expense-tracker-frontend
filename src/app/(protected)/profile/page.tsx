@@ -6,14 +6,8 @@ import { getCurrentUser } from "@/lib/user.api";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RecurringChargesPanel } from "@/components/app/RecurringChargesPanel";
+import { formatCurrency, formatExpenseDate } from "@/lib/expense.utils";
 import type { Expense, RecurringCharge, User } from "@/types";
-
-function formatCurrency(amount: number) {
-  return amount.toLocaleString("en-US", {
-    style: "currency",
-    currency: "INR",
-  });
-}
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
@@ -112,7 +106,7 @@ export default function ProfilePage() {
                 <div className="mt-2">
                   <div className="text-sm font-semibold">{lastExpense.name}</div>
                   <div className="text-xs text-white/60">
-                    {new Date(lastExpense.date).toLocaleDateString()}
+                    {formatExpenseDate(lastExpense.date)}
                   </div>
                   <div className="mt-2 flex items-center gap-2">
                     <Badge>{lastExpense.category}</Badge>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   deleteExpense,
@@ -11,6 +11,11 @@ import { getCategories } from "@/lib/category.api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  formatCurrency,
+  formatExpenseDate,
+  toInputDate,
+} from "@/lib/expense.utils";
 import type { Category, Expense } from "@/types";
 
 type UpdateFormState = {
@@ -61,7 +66,7 @@ export default function ExpenseDetailPage() {
           amount: String(expenseData.amount),
           category: expenseData.categoryId || "",
           budgetType: expenseData.budgetType,
-          date: new Date(expenseData.date).toISOString().slice(0, 10),
+          date: toInputDate(expenseData.date),
           description: expenseData.description || "",
         });
       } catch {
@@ -79,14 +84,6 @@ export default function ExpenseDetailPage() {
       active = false;
     };
   }, [expenseId]);
-
-  const formattedAmount = useMemo(() => {
-    if (!expense) return "";
-    return expense.amount.toLocaleString("en-US", {
-      style: "currency",
-      currency: "INR",
-    });
-  }, [expense]);
 
   const onUpdate = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -175,10 +172,10 @@ export default function ExpenseDetailPage() {
             <Badge>{expense.category}</Badge>
             <Badge className="text-white/65">{expense.budgetType}</Badge>
             <span className="text-white/60 text-sm">
-              {new Date(expense.date).toLocaleDateString()}
+              {formatExpenseDate(expense.date)}
             </span>
           </div>
-          <div className="text-3xl font-semibold">{formattedAmount}</div>
+          <div className="text-3xl font-semibold">{formatCurrency(expense.amount)}</div>
         </div>
 
         <form onSubmit={onUpdate} className="space-y-5">

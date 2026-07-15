@@ -6,18 +6,12 @@ import type { RecurringCharge } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { editRecurringCharge, recurringChargeStop } from "@/lib/expense.api";
-
-function formatCurrency(amount: number) {
-  return amount.toLocaleString("en-US", {
-    style: "currency",
-    currency: "INR",
-  });
-}
-
-function toInputDate(value?: string | null) {
-  if (!value) return "";
-  return new Date(value).toISOString().slice(0, 10);
-}
+import {
+  formatCurrency,
+  formatExpenseDate,
+  getTodayInputDate,
+  toInputDate,
+} from "@/lib/expense.utils";
 
 export function RecurringChargesPanel({
   recurringCharges,
@@ -30,7 +24,7 @@ export function RecurringChargesPanel({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const today = useMemo(() => getTodayInputDate(), []);
 
   const closeModal = () => {
     setIsClosing(true);
@@ -122,9 +116,9 @@ export function RecurringChargesPanel({
                     {charge.frequency}
                   </div>
                   <div className="text-xs text-white/50">
-                    Starts {new Date(charge.startDate).toLocaleDateString()}
+                    Starts {formatExpenseDate(charge.startDate)}
                     {charge.endDate
-                      ? ` | Ends ${new Date(charge.endDate).toLocaleDateString()}`
+                      ? ` | Ends ${formatExpenseDate(charge.endDate)}`
                       : " | No end date"}
                   </div>
                 </div>

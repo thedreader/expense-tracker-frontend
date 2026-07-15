@@ -15,6 +15,7 @@ import { StatCard } from "@/components/app/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { getAnalytics } from "@/lib/analytics.api";
+import { formatCurrency, formatExpenseDate } from "@/lib/expense.utils";
 import type {
   AnalyticsCategoryBreakdown,
   AnalyticsChartBar,
@@ -73,14 +74,6 @@ function formatDateParam(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-}
-
-function formatCurrency(amount: number) {
-  return amount.toLocaleString("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  });
 }
 
 function getProgressColor(pct: number): string {
@@ -799,11 +792,7 @@ export default function AnalyticsPage() {
                         {expense.name}
                       </div>
                       <div className="mt-0.5 text-[11px] text-white/40">
-                        {new Date(expense.date).toLocaleDateString("en-GB", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}{" "}
+                        {formatExpenseDate(expense.date)}{" "}
                         · {expense.category}
                       </div>
                     </div>

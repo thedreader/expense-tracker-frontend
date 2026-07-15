@@ -16,14 +16,8 @@ import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/app/EmptyState";
 import { PlusIcon } from "@/components/icons";
+import { formatCurrency, formatExpenseDate } from "@/lib/expense.utils";
 import type { Category, Expense } from "@/types";
-
-function formatCurrency(amount: number) {
-  return amount.toLocaleString("en-US", {
-    style: "currency",
-    currency: "INR",
-  });
-}
 
 function FilterIcon() {
   return (
@@ -298,7 +292,7 @@ export default function ExpensesPage() {
               <div className="sm:min-w-[200px]">
                 <div className="text-sm font-semibold">{expense.name}</div>
                 <div className="text-xs text-white/60">
-                  {new Date(expense.date).toLocaleDateString("en-GB")}
+                  {formatExpenseDate(expense.date)}
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">

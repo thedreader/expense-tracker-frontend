@@ -10,15 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/app/EmptyState";
 import { DashboardIcon, ExpensesIcon, PlusIcon } from "@/components/icons";
+import { formatCurrency, formatExpenseDate } from "@/lib/expense.utils";
 import type { BudgetBucketKey, BudgetStatus, Expense } from "@/types";
-
-function formatCurrency(amount: number) {
-  return amount.toLocaleString("en-US", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 2,
-  });
-}
 
 const budgetBuckets: { key: BudgetBucketKey; label: string }[] = [
   { key: "needs", label: "Needs" },
@@ -240,7 +233,7 @@ export default function DashboardPage() {
                   <div>
                     <div className="text-sm font-semibold">{expense.name}</div>
                     <div className="text-xs text-white/60">
-                      {new Date(expense.date).toLocaleDateString()}
+                      {formatExpenseDate(expense.date)}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
