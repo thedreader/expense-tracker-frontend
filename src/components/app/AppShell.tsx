@@ -35,8 +35,8 @@ export function AppShell({
           <div className="text-xs uppercase tracking-[0.3em] text-white/50">
             Signed in
           </div>
-          <div className="mt-2 text-sm font-semibold">{user.name}</div>
-          <div className="text-xs text-white/60">{user.email}</div>
+          <div className="mt-2 break-words text-sm font-semibold">{user.name}</div>
+          <div className="break-all text-xs text-white/60">{user.email}</div>
           <Button
             type="button"
             variant="ghost"
@@ -49,8 +49,8 @@ export function AppShell({
         </div>
       </aside>
 
-      <div className="flex flex-col min-h-screen">
-        <header className="md:hidden flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[rgba(10,10,10,0.8)]">
+      <div className="flex min-w-0 flex-col min-h-screen">
+        <header className="md:hidden flex items-center justify-between px-4 py-4 border-b border-white/10 bg-[rgba(10,10,10,0.8)] sm:px-6">
           <Logo />
           <Button
             type="button"
@@ -62,7 +62,7 @@ export function AppShell({
           </Button>
         </header>
 
-        <main className="flex-1 px-4 py-6 pb-24 sm:px-6 sm:py-8 lg:px-12 md:pb-8">
+        <main className="min-w-0 flex-1 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-8 lg:px-12 md:pb-8">
           {children}
         </main>
       </div>

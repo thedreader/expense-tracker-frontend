@@ -87,8 +87,8 @@ export function MobileNavMenu() {
   const activeHref = getActiveHref(pathname);
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[rgba(10,10,10,0.92)] backdrop-blur-md">
-      <div className="grid grid-cols-6 px-2 py-2">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[rgba(10,10,10,0.92)] pb-[env(safe-area-inset-bottom)] backdrop-blur-md">
+      <div className="grid grid-cols-6 items-end px-2 py-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = item.href === activeHref;
@@ -97,15 +97,16 @@ export function MobileNavMenu() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-[11px] transition-colors ${
+              className={`flex min-h-11 min-w-0 w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-lg px-1 py-2 text-[11px] transition-all ${
                 isActive
                   ? "bg-white/10 text-white"
                   : "text-white/60 hover:text-white"
               }`}
               aria-label={item.label}
+              title={item.label}
             >
               <Icon />
-              <span>{item.label}</span>
+              {isActive ? <span className="block max-w-full truncate">{item.label}</span> : null}
             </Link>
           );
         })}

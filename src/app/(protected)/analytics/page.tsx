@@ -2,25 +2,31 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  Bar,
-  BarChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import dynamic from "next/dynamic";
 import { EmptyState } from "@/components/app/EmptyState";
+import { ExpenseQuickAddDialog } from "@/components/app/ExpenseQuickAddDialog";
+import { AnalyticsPeriodPicker } from "@/components/app/analytics/AnalyticsPeriodPicker";
 import { StatCard } from "@/components/app/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { getAnalytics } from "@/lib/analytics.api";
-import { formatCurrency, formatExpenseDate } from "@/lib/expense.utils";
+import { getCategories } from "@/lib/category.api";
+import { deleteExpense, updateExpense } from "@/lib/expense.api";
+import {
+  formatCurrency,
+  formatExpenseDate,
+  getMonthWeekRange,
+  getMonthWeekStart,
+  getMostRecentBudgetType,
+  rankQuickCategories,
+  shiftMonthWeek,
+} from "@/lib/expense.utils";
 import type {
   AnalyticsCategoryBreakdown,
   AnalyticsChartBar,
   AnalyticsResponse,
   BudgetBucketStatus,
+  Category,
   Expense,
 } from "@/types";
 
@@ -31,6 +37,18 @@ const ACCENT = {
   wants: "#1E90FF",
   investments: "#FF0099",
 } as const;
+
+const SpendingChart = dynamic(
+  () => import("@/components/app/analytics/SpendingChart"),
+  {
+    ssr: false,
+    loading: () => (
+      <Card>
+        <div className="h-[200px] animate-pulse rounded-xl bg-white/5" />
+      </Card>
+    ),
+  },
+);
 
 const DOT_COLORS: Record<string, string> = {
   needs: ACCENT.needs,
@@ -282,43 +300,12 @@ function ChevronRightIcon() {
   );
 }
 
-function CustomTooltip({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean;
-  payload?: { name: string; value: number; fill: string }[];
-  label?: string;
-}) {
-  if (!active || !payload || payload.length === 0) return null;
-
-  return (
-    <div
-      className="rounded-xl border border-white/10 px-4 py-3 shadow-xl"
-      style={{ background: "#1a1a1a" }}
-    >
-      <p className="mb-2 text-xs text-white/60">{label}</p>
-      {payload.map((entry) => (
-        <div key={entry.name} className="flex items-center gap-2 text-xs">
-          <span
-            className="inline-block h-2 w-2 rounded-full"
-            style={{ backgroundColor: entry.fill }}
-          />
-          <span className="capitalize text-white/80">{entry.name}</span>
-          <span className="ml-auto font-semibold text-white">
-            {formatCurrency(entry.value)}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export default function AnalyticsPage() {
   const [view, setView] = useState<ViewMode>("monthly");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [data, setData] = useState<AnalyticsResponse>(EMPTY_ANALYTICS);
+  const [userCategories, setUserCategories] = useState<Category[]>([]);
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -326,7 +313,7 @@ export default function AnalyticsPage() {
     setCurrentDate((prev) => {
       const nextDate = new Date(prev);
       if (view === "daily") nextDate.setDate(nextDate.getDate() - 1);
-      if (view === "weekly") nextDate.setDate(nextDate.getDate() - 7);
+      if (view === "weekly") return shiftMonthWeek(prev, -1);
       if (view === "monthly") nextDate.setMonth(nextDate.getMonth() - 1);
       if (view === "yearly") nextDate.setFullYear(nextDate.getFullYear() - 1);
       return nextDate;
@@ -337,7 +324,7 @@ export default function AnalyticsPage() {
     setCurrentDate((prev) => {
       const nextDate = new Date(prev);
       if (view === "daily") nextDate.setDate(nextDate.getDate() + 1);
-      if (view === "weekly") nextDate.setDate(nextDate.getDate() + 7);
+      if (view === "weekly") return shiftMonthWeek(prev, 1);
       if (view === "monthly") nextDate.setMonth(nextDate.getMonth() + 1);
       if (view === "yearly") nextDate.setFullYear(nextDate.getFullYear() + 1);
       return nextDate;
@@ -351,16 +338,7 @@ export default function AnalyticsPage() {
     }
 
     if (view === "weekly") {
-      const getWeekStart = (date: Date) => {
-        const copy = new Date(date);
-        const day = copy.getDay();
-        const diff = day === 0 ? -6 : 1 - day;
-        copy.setDate(copy.getDate() + diff);
-        copy.setHours(0, 0, 0, 0);
-        return copy.getTime();
-      };
-
-      return getWeekStart(currentDate) === getWeekStart(now);
+      return getMonthWeekRange(currentDate).start.getTime() === getMonthWeekRange(now).start.getTime();
     }
 
     if (view === "monthly") {
@@ -382,13 +360,9 @@ export default function AnalyticsPage() {
     }
 
     if (view === "weekly") {
-      const day = currentDate.getDay();
-      const diff = day === 0 ? -6 : 1 - day;
-      const monday = new Date(currentDate);
-      monday.setDate(currentDate.getDate() + diff);
       return {
         view: "weekly" as const,
-        date: formatDateParam(monday),
+        date: formatDateParam(getMonthWeekRange(currentDate).start),
       };
     }
 
@@ -414,9 +388,13 @@ export default function AnalyticsPage() {
       setError(null);
 
       try {
-        const result = await getAnalytics(buildParams());
+        const [result, categoriesData] = await Promise.all([
+          getAnalytics(buildParams()),
+          getCategories(),
+        ]);
         if (active) {
           setData(normalizeAnalyticsResponse(result));
+          setUserCategories(categoriesData);
         }
       } catch (err) {
         if (active) {
@@ -443,7 +421,8 @@ export default function AnalyticsPage() {
 
   const handleViewChange = (nextView: ViewMode) => {
     setView(nextView);
-    setCurrentDate(new Date());
+    const nextDate = new Date();
+    setCurrentDate(nextView === "weekly" ? getMonthWeekStart(nextDate.getFullYear(), nextDate.getMonth(), getMonthWeekRange(nextDate).week) : nextDate);
   };
 
   const summary = data.summary;
@@ -452,6 +431,41 @@ export default function AnalyticsPage() {
   const categories = data.categoryBreakdown;
   const expenses = data.expenses;
   const budgetStatus = data.budgetStatus;
+  const quickCategories = useMemo(
+    () => rankQuickCategories(userCategories, expenses),
+    [userCategories, expenses],
+  );
+  const defaultBudgetType = useMemo(
+    () => getMostRecentBudgetType(expenses),
+    [expenses],
+  );
+
+  const refreshAnalytics = useCallback(async () => {
+    const result = await getAnalytics(buildParams());
+    setData(normalizeAnalyticsResponse(result));
+  }, [buildParams]);
+
+  const handleExpenseSave = async (formData: FormData) => {
+    if (!selectedExpense) return;
+
+    await updateExpense(selectedExpense._id, {
+      name: String(formData.get("name") || "").trim(),
+      amount: Number(formData.get("amount") || 0),
+      category: String(formData.get("category") || ""),
+      budgetType: String(formData.get("budgetType") || "wants") as
+        | "needs"
+        | "wants"
+        | "investments",
+      date: String(formData.get("date") || ""),
+      description: String(formData.get("description") || ""),
+    });
+    await refreshAnalytics();
+  };
+
+  const handleExpenseDelete = async (id: string) => {
+    await deleteExpense(id);
+    await refreshAnalytics();
+  };
 
   const needsPct = summary.total
     ? ((summary.needs / summary.total) * 100).toFixed(1)
@@ -477,13 +491,13 @@ export default function AnalyticsPage() {
         <h1 className="text-3xl font-semibold">Spending Insights</h1>
       </div>
 
-      <div className="inline-flex gap-0.5 rounded-full border border-white/10 bg-white/5 p-1">
+      <div className="grid w-full grid-cols-2 gap-1 rounded-2xl border border-white/10 bg-white/5 p-1 sm:inline-flex sm:w-auto sm:gap-0.5 sm:rounded-full">
         {views.map((item) => (
           <button
             key={item}
             type="button"
             onClick={() => handleViewChange(item)}
-            className={`rounded-full px-5 py-2 text-[13px] font-medium capitalize transition-all duration-200 ${
+            className={`min-h-11 w-full rounded-full px-3 py-2 text-sm font-medium capitalize transition-all duration-200 sm:w-auto sm:px-5 ${
               item === view
                 ? "bg-[var(--accent-1)] font-semibold text-[#0D0D0D] shadow-md"
                 : "text-white/60 hover:text-white"
@@ -494,32 +508,37 @@ export default function AnalyticsPage() {
         ))}
       </div>
 
-      <div className="glass flex items-center justify-between rounded-2xl px-5 py-3.5">
+      <div className="glass flex flex-wrap items-center justify-between gap-2 rounded-2xl px-3 py-3.5 sm:px-5">
         <button
           type="button"
           onClick={goToPrevious}
-          className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-[13px] text-white transition-colors hover:bg-white/10"
+          className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition-colors hover:bg-white/10 sm:px-4"
         >
           <ChevronLeftIcon />
-          Previous
         </button>
 
-        <div className="text-center">
-          <div className="text-[15px] font-semibold">{period.label || "-"}</div>
-          <div className="mt-0.5 text-xs text-white/40">{period.sub || ""}</div>
-        </div>
+        <AnalyticsPeriodPicker
+          view={view}
+          currentDate={currentDate}
+          label={view === "daily" ? currentDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }) : period.label}
+          onChange={setCurrentDate}
+        />
+        {view !== "daily" ? (
+          <div className="hidden max-w-[14rem] truncate text-center text-sm text-white/40 sm:block">
+            {period.sub || ""}
+          </div>
+        ) : null}
 
         <button
           type="button"
           onClick={goToNext}
           disabled={isCurrentPeriod}
-          className={`flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-[13px] transition-colors ${
+          className={`flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm transition-colors sm:px-4 ${
             isCurrentPeriod
               ? "cursor-not-allowed text-white/20"
               : "text-white hover:bg-white/10"
           }`}
         >
-          Next
           <ChevronRightIcon />
         </button>
       </div>
@@ -547,7 +566,7 @@ export default function AnalyticsPage() {
 
       {!loading && !error && hasAnyAnalytics && (
         <>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               label="Total Spent"
               value={formatCurrency(summary.total)}
@@ -579,7 +598,7 @@ export default function AnalyticsPage() {
           </div>
 
           {budgetStatus && (
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 lg:grid-cols-3">
               {(
                 [
                   { key: "needs", label: "Needs" },
@@ -597,11 +616,11 @@ export default function AnalyticsPage() {
                     className="rounded-2xl border border-white/10 bg-[var(--panel)] p-5 shadow-[var(--shadow)]"
                   >
                     <div className="mb-2.5 flex items-center justify-between">
-                      <span className="text-[11px] uppercase tracking-[0.1em] text-white/40">
+                      <span className="text-sm uppercase tracking-[0.1em] text-white/40">
                         {bucket.label}
                       </span>
                       <span
-                        className="text-[11px] font-semibold"
+                        className="text-sm font-semibold"
                         style={{
                           color: getProgressBarColor(status.percentageUsed),
                         }}
@@ -621,7 +640,7 @@ export default function AnalyticsPage() {
                       />
                     </div>
 
-                    <div className="text-[11px] text-white/35">
+                    <div className="text-sm text-white/35">
                       {formatCurrency(status.remaining)} remaining of{" "}
                       {formatCurrency(status.budget)}
                     </div>
@@ -639,81 +658,7 @@ export default function AnalyticsPage() {
             }
           >
             {view !== "daily" ? (
-              <Card>
-                <h2 className="mb-5 text-sm font-semibold text-white/80">
-                  {view === "weekly" && "Spending by Day"}
-                  {view === "monthly" && "Spending by Week"}
-                  {view === "yearly" && "Spending by Month"}
-                </h2>
-
-                {chartData.length > 0 ? (
-                  <>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={chartData} barSize={28}>
-                        <XAxis
-                          dataKey="label"
-                          tick={{
-                            fill: "rgba(255,255,255,0.4)",
-                            fontSize: 11,
-                          }}
-                          axisLine={false}
-                          tickLine={false}
-                        />
-                        <YAxis hide />
-                        <Tooltip
-                          content={<CustomTooltip />}
-                          cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                        />
-                        <Bar
-                          dataKey="needs"
-                          stackId="a"
-                          fill={ACCENT.needs}
-                          radius={[0, 0, 0, 0]}
-                        />
-                        <Bar
-                          dataKey="wants"
-                          stackId="a"
-                          fill={ACCENT.wants}
-                          radius={[0, 0, 0, 0]}
-                        />
-                        <Bar
-                          dataKey="investments"
-                          stackId="a"
-                          fill={ACCENT.investments}
-                          radius={[4, 4, 0, 0]}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-
-                    <div className="mt-4 flex gap-4">
-                      {(["Needs", "Wants", "Investments"] as const).map(
-                        (name, index) => (
-                          <div
-                            key={name}
-                            className="flex items-center gap-1.5 text-[11px] text-white/50"
-                          >
-                            <span
-                              className="inline-block h-2 w-2 rounded-full"
-                              style={{
-                                backgroundColor: [
-                                  ACCENT.needs,
-                                  ACCENT.wants,
-                                  ACCENT.investments,
-                                ][index],
-                              }}
-                            />
-                            {name}
-                          </div>
-                        ),
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex h-[200px] items-center justify-center text-sm text-white/40">
-                    No chart data for this period
-                  </div>
-                )}
-              </Card>
+              <SpendingChart view={view} chartData={chartData} />
             ) : null}
 
             <Card>
@@ -725,9 +670,9 @@ export default function AnalyticsPage() {
                 <div className="space-y-3">
                   {categories.map((category, index) => (
                     <div key={`${category.category}-${index}`}>
-                      <div className="mb-1.5 flex justify-between text-xs">
-                        <span className="text-white/80">{category.category}</span>
-                        <span className="text-white/50">
+                      <div className="mb-1.5 flex flex-wrap justify-between gap-x-2 gap-y-1 text-sm">
+                        <span className="min-w-0 break-words text-white/80">{category.category}</span>
+                        <span className="shrink-0 text-white/50">
                           {formatCurrency(category.total)} · {category.percentage}%
                         </span>
                       </div>
@@ -754,11 +699,11 @@ export default function AnalyticsPage() {
           </div>
 
           <Card>
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold">Transactions</h2>
               <Link
                 href="/expenses"
-                className="text-xs text-white/40 transition-colors hover:text-white"
+                className="inline-flex min-h-11 items-center text-sm text-white/40 transition-colors hover:text-white"
               >
                 View all →
               </Link>
@@ -774,11 +719,12 @@ export default function AnalyticsPage() {
             ) : (
               <div className="space-y-2.5">
                 {expenses.slice(0, 10).map((expense) => (
-                  <Link
-                    key={expense._id}
-                    href={`/expenses/${expense._id}`}
-                    className="flex items-center gap-3 rounded-2xl border border-white/6 bg-white/[0.02] px-4 py-3 transition-colors hover:bg-white/5"
-                  >
+                    <button
+                      key={expense._id}
+                      type="button"
+                      onClick={() => setSelectedExpense(expense)}
+                      className="flex w-full flex-wrap items-center gap-2 rounded-2xl border border-white/6 bg-white/[0.02] px-4 py-3 text-left transition-colors hover:bg-white/5 sm:gap-3"
+                    >
                     <span
                       className="h-2 w-2 flex-shrink-0 rounded-full"
                       style={{
@@ -788,29 +734,42 @@ export default function AnalyticsPage() {
                     />
 
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[13px] font-medium">
+                      <div className="truncate text-sm font-medium">
                         {expense.name}
                       </div>
-                      <div className="mt-0.5 text-[11px] text-white/40">
+                      <div className="mt-0.5 break-words text-sm text-white/40">
                         {formatExpenseDate(expense.date)}{" "}
                         · {expense.category}
                       </div>
                     </div>
 
-                    <Badge className="px-2 py-0.5 text-[10px]">
+                    <Badge className="shrink-0 px-2 py-0.5 text-sm">
                       {expense.budgetType}
                     </Badge>
 
                     <div className="whitespace-nowrap text-right text-sm font-semibold">
                       {formatCurrency(expense.amount)}
                     </div>
-                  </Link>
+                    </button>
                 ))}
               </div>
             )}
           </Card>
         </>
       )}
+
+      {selectedExpense ? (
+        <ExpenseQuickAddDialog
+          today={formatDateParam(new Date())}
+          categories={userCategories}
+          quickCategories={quickCategories}
+          defaultBudgetType={defaultBudgetType}
+          expense={selectedExpense}
+          onClose={() => setSelectedExpense(null)}
+          action={handleExpenseSave}
+          onDelete={handleExpenseDelete}
+        />
+      ) : null}
     </div>
   );
 }

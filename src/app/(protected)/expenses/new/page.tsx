@@ -1,21 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createExpense, getExpenses } from "@/lib/expense.api";
+import { getExpenses } from "@/lib/expense.api";
 import { getCategories } from "@/lib/category.api";
 import {
   getMostRecentBudgetType,
   getTodayInputDate,
   rankQuickCategories,
 } from "@/lib/expense.utils";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/app/EmptyState";
-import { NewExpenseForm } from "@/components/app/NewExpenseForm";
+import { MultiExpenseForm } from "@/components/app/MultiExpenseForm";
 import type { Category, Expense } from "@/types";
 
 export default function NewExpensePage() {
-  const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,32 +58,6 @@ export default function NewExpensePage() {
     [expenses],
   );
 
-  const handleCreate = async (formData: FormData) => {
-    const categoryId = String(formData.get("category") || "");
-    const category = categories.find((item) => item._id === categoryId);
-    const name = String(formData.get("name") || "").trim();
-
-    const payload = {
-      name: name || category?.name || "",
-      amount: Number(formData.get("amount") || 0),
-      category: categoryId,
-      budgetType: String(formData.get("budgetType") || defaultBudgetType) as
-        | "needs"
-        | "wants"
-        | "investments",
-      date: (formData.get("date") as string) || "",
-      description: (formData.get("description") as string) || "",
-    };
-
-    try {
-      await createExpense(payload);
-      router.replace("/expenses");
-      router.refresh();
-    } catch (err) {
-      setError((err as Error).message);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -108,24 +79,21 @@ export default function NewExpensePage() {
         </div>
       ) : null}
 
-      <Card>
-        {categories.length === 0 ? (
-          <EmptyState
+      {categories.length === 0 ? (
+        <EmptyState
             title="No categories found"
             description="Create a category in settings before adding an expense."
             actionLabel="Go to settings"
             actionHref="/settings"
-          />
-        ) : (
-          <NewExpenseForm
-            action={handleCreate}
-            today={today}
-            categories={categories}
-            quickCategories={quickCategories}
-            defaultBudgetType={defaultBudgetType}
-          />
-        )}
-      </Card>
+        />
+      ) : (
+        <MultiExpenseForm
+          today={today}
+          categories={categories}
+          quickCategories={quickCategories}
+          defaultBudgetType={defaultBudgetType}
+        />
+      )}
     </div>
   );
 }

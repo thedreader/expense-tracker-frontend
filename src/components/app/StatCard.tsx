@@ -14,22 +14,22 @@ function StatCardBase({
   icon?: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-[var(--panel)] p-5 shadow-[var(--shadow)]">
-      <div className="flex items-start justify-between">
-        <div>
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-[var(--panel)] p-5 shadow-[var(--shadow)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <p className="text-sm text-white/60">{label}</p>
-          <h3 className="text-2xl font-semibold mt-2">{value}</h3>
+          <h3 className="truncate text-2xl font-semibold mt-2">{value}</h3>
         </div>
         {icon ? (
           <div
-            className="h-10 w-10 rounded-xl flex items-center justify-center bg-white/10"
+            className="h-10 w-10 shrink-0 rounded-xl flex items-center justify-center bg-white/10"
             style={accent ? { backgroundColor: `${accent}20` } : undefined}
           >
             <span style={accent ? { color: accent } : undefined}>{icon}</span>
           </div>
         ) : null}
       </div>
-      {helper ? <p className="text-xs text-white/50 mt-3">{helper}</p> : null}
+      {helper ? <p className="mt-3 text-sm text-white/50">{helper}</p> : null}
     </div>
   );
 }

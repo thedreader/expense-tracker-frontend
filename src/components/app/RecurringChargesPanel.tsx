@@ -107,11 +107,11 @@ export function RecurringChargesPanel({
               key={charge._id}
               type="button"
               onClick={() => setActive(charge)}
-              className="w-full text-left rounded-xl border border-white/10 bg-white/5 p-4 transition-all duration-300 ease-out hover:border-white/20 hover:bg-white/10 hover:translate-y-[-1px]"
+              className="min-w-0 w-full text-left rounded-xl border border-white/10 bg-white/5 p-4 transition-all duration-300 ease-out hover:border-white/20 hover:bg-white/10 hover:translate-y-[-1px]"
             >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <div className="text-sm font-semibold">{charge.name}</div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="break-words text-sm font-semibold">{charge.name}</div>
                   <div className="text-xs text-white/60">
                     {charge.frequency}
                   </div>
@@ -151,7 +151,7 @@ export function RecurringChargesPanel({
       {active ? (
         <dialog
           open
-          className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 transition-opacity duration-200 ${
+          className={`fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 px-4 py-4 transition-opacity duration-200 sm:items-center ${
             isClosing ? "opacity-0" : "opacity-100"
           }`}
           onClick={closeModal}
@@ -161,19 +161,19 @@ export function RecurringChargesPanel({
         >
           <div
             onClick={(event) => event.stopPropagation()}
-            className={`w-full max-w-2xl rounded-2xl border border-white/15 bg-[#121212] p-6 shadow-2xl transition-all duration-200 ${
+            className={`max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-2xl border border-white/15 bg-[#121212] p-5 shadow-2xl transition-all duration-200 sm:p-6 ${
               isClosing
                 ? "opacity-0 scale-95 translate-y-2"
                 : "opacity-100 scale-100 translate-y-0"
             }`}
             aria-labelledby="modal-title"
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Edit recurring charge</h3>
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <h3 id="modal-title" className="min-w-0 break-words text-lg font-semibold">Edit recurring charge</h3>
               <button
                 type="button"
                 onClick={closeModal}
-                className="text-white/60 hover:text-white transition-colors"
+                className="min-h-11 shrink-0 rounded-xl px-3 text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white"
               >
                 Close
               </button>
@@ -199,7 +199,7 @@ export function RecurringChargesPanel({
                     step="0.01"
                     required
                     defaultValue={active.amount}
-                    className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+                    className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
                   />
                 </div>
                 <div className="space-y-2">
@@ -210,7 +210,7 @@ export function RecurringChargesPanel({
                     id="frequency"
                     name="frequency"
                     defaultValue={active.frequency}
-                    className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+                    className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
                   >
                     <option value="daily">Daily</option>
                     <option value="weekly">Weekly</option>
@@ -226,7 +226,7 @@ export function RecurringChargesPanel({
                     id="budgetType"
                     name="budgetType"
                     defaultValue={active.budgetType}
-                    className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+                    className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
                   >
                     <option value="needs">Needs</option>
                     <option value="wants">Wants</option>
@@ -244,7 +244,7 @@ export function RecurringChargesPanel({
                     min="1"
                     required
                     defaultValue={active.interval}
-                    className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+                    className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
                   />
                 </div>
                 <div className="space-y-2">
@@ -258,7 +258,7 @@ export function RecurringChargesPanel({
                     required
                     min={today}
                     defaultValue={toInputDate(active.startDate) || today}
-                    className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+                    className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
                   />
                 </div>
                 <div className="space-y-2">
@@ -270,7 +270,7 @@ export function RecurringChargesPanel({
                     name="endDate"
                     type="date"
                     defaultValue={toInputDate(active.endDate)}
-                    className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+                    className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
                   />
                 </div>
               </div>
@@ -282,7 +282,7 @@ export function RecurringChargesPanel({
                   id="description"
                   name="description"
                   defaultValue={active.description || ""}
-                  className="min-h-[110px] w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 py-3 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+                  className="min-h-[110px] w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 py-3 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
                 />
               </div>
 

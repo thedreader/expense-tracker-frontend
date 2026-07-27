@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
+
 import "./globals.css";
 
 const space = Space_Grotesk({
@@ -17,6 +18,11 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Neon Ledger",
   description: "Track daily expenses and stay in control of your monthly budget.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

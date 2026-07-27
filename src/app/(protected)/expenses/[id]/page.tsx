@@ -154,9 +154,9 @@ export default function ExpenseDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <p className="text-sm text-white/60">Expense details</p>
-          <h1 className="text-3xl font-semibold">{expense.name}</h1>
+          <h1 className="break-words text-3xl font-semibold">{expense.name}</h1>
         </div>
       </div>
 
@@ -190,7 +190,7 @@ export default function ExpenseDetailPage() {
                   setFormState((prev) => ({ ...prev, name: event.target.value }))
                 }
                 required
-                className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+                className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
               />
             </div>
             <div className="space-y-2">
@@ -206,7 +206,7 @@ export default function ExpenseDetailPage() {
                   setFormState((prev) => ({ ...prev, amount: event.target.value }))
                 }
                 required
-                className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+                className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
               />
             </div>
             <div className="space-y-2">
@@ -219,7 +219,7 @@ export default function ExpenseDetailPage() {
                   setFormState((prev) => ({ ...prev, category: event.target.value }))
                 }
                 required
-                className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+                className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
               >
                 {categories.map((category) => (
                   <option key={category._id} value={category._id}>
@@ -241,7 +241,7 @@ export default function ExpenseDetailPage() {
                   }))
                 }
                 required
-                className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+                className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
               >
                 <option value="needs">Needs</option>
                 <option value="wants">Wants</option>
@@ -259,7 +259,7 @@ export default function ExpenseDetailPage() {
                   setFormState((prev) => ({ ...prev, date: event.target.value }))
                 }
                 required
-                className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+                className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
               />
             </div>
           </div>
@@ -272,7 +272,7 @@ export default function ExpenseDetailPage() {
               onChange={(event) =>
                 setFormState((prev) => ({ ...prev, description: event.target.value }))
               }
-              className="min-h-[120px] w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 py-3 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+              className="min-h-[120px] w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 py-3 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
             />
           </div>
           <div className="flex gap-3">

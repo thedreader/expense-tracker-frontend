@@ -18,6 +18,7 @@ type FieldErrors = {
   amount?: string;
   category?: string;
   budgetType?: string;
+  name?: string;
   interval?: string;
   startDate?: string;
 };
@@ -42,10 +43,12 @@ export function RecurringExpenseForm({
     const nextErrors: FieldErrors = {};
     const amount = Number(formData.get("amount"));
     const interval = Number(formData.get("interval"));
+    const name = String(formData.get("name") || "").trim();
 
     if (!Number.isFinite(amount) || amount < 1) {
       nextErrors.amount = "Amount must be at least 1.";
     }
+    if (!name) nextErrors.name = "Expense name is required.";
     if (!String(formData.get("category") || "").trim()) {
       nextErrors.category = "Category is required.";
     }
@@ -73,15 +76,20 @@ export function RecurringExpenseForm({
       <div className="grid gap-5 md:grid-cols-2">
         <div className="space-y-2">
           <label htmlFor="name" className="text-sm text-white/80">
-            Expense name <span className="text-white/40">(optional)</span>
+            Expense name
           </label>
           <input
             id="name"
             name="name"
             defaultValue={initialValues?.name || ""}
-            placeholder="Defaults to the category name"
-            className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
+            required
+            aria-invalid={Boolean(fieldErrors.name)}
+            placeholder="Groceries, rent, coffee"
+            className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
           />
+          {fieldErrors.name ? (
+            <p className="text-sm text-[var(--accent-3)]">{fieldErrors.name}</p>
+          ) : null}
         </div>
         <div className="space-y-2">
           <label htmlFor="amount" className="text-sm text-white/80">
@@ -96,10 +104,10 @@ export function RecurringExpenseForm({
             required
             defaultValue={initialValues?.amount || ""}
             aria-invalid={Boolean(fieldErrors.amount)}
-            className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+            className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
           />
           {fieldErrors.amount ? (
-            <p className="text-xs text-[var(--accent-3)]">{fieldErrors.amount}</p>
+            <p className="text-sm text-[var(--accent-3)]">{fieldErrors.amount}</p>
           ) : null}
         </div>
         <div className="space-y-2">
@@ -112,7 +120,7 @@ export function RecurringExpenseForm({
             defaultValue={initialCategory}
             required
             aria-invalid={Boolean(fieldErrors.category)}
-            className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+            className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
           >
             {categories.map((category) => (
               <option key={category._id} value={category._id}>
@@ -121,7 +129,7 @@ export function RecurringExpenseForm({
             ))}
           </select>
           {fieldErrors.category ? (
-            <p className="text-xs text-[var(--accent-3)]">{fieldErrors.category}</p>
+            <p className="text-sm text-[var(--accent-3)]">{fieldErrors.category}</p>
           ) : null}
         </div>
         <div className="space-y-2">
@@ -134,14 +142,14 @@ export function RecurringExpenseForm({
             defaultValue={initialValues?.budgetType || "wants"}
             required
             aria-invalid={Boolean(fieldErrors.budgetType)}
-            className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+            className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
           >
             <option value="needs">Needs</option>
             <option value="wants">Wants</option>
             <option value="investments">Investments</option>
           </select>
           {fieldErrors.budgetType ? (
-            <p className="text-xs text-[var(--accent-3)]">{fieldErrors.budgetType}</p>
+            <p className="text-sm text-[var(--accent-3)]">{fieldErrors.budgetType}</p>
           ) : null}
         </div>
         <div className="space-y-2">
@@ -152,7 +160,7 @@ export function RecurringExpenseForm({
             id="frequency"
             name="frequency"
             defaultValue="monthly"
-            className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+            className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
           >
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
@@ -172,10 +180,10 @@ export function RecurringExpenseForm({
             required
             defaultValue="1"
             aria-invalid={Boolean(fieldErrors.interval)}
-            className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+            className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
           />
           {fieldErrors.interval ? (
-            <p className="text-xs text-[var(--accent-3)]">{fieldErrors.interval}</p>
+            <p className="text-sm text-[var(--accent-3)]">{fieldErrors.interval}</p>
           ) : null}
         </div>
         <div className="space-y-2">
@@ -189,10 +197,10 @@ export function RecurringExpenseForm({
             defaultValue={initialValues?.startDate || today}
             required
             aria-invalid={Boolean(fieldErrors.startDate)}
-            className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+            className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
           />
           {fieldErrors.startDate ? (
-            <p className="text-xs text-[var(--accent-3)]">{fieldErrors.startDate}</p>
+            <p className="text-sm text-[var(--accent-3)]">{fieldErrors.startDate}</p>
           ) : null}
         </div>
         <div className="space-y-2">
@@ -203,7 +211,7 @@ export function RecurringExpenseForm({
             id="endDate"
             name="endDate"
             type="date"
-            className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+            className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
           />
         </div>
       </div>
@@ -217,7 +225,7 @@ export function RecurringExpenseForm({
           name="description"
           defaultValue={initialValues?.description || ""}
           placeholder="Optional notes about this recurring charge"
-          className="min-h-[110px] w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
+          className="min-h-[110px] w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
         />
       </div>
 

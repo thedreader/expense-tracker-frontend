@@ -3,23 +3,23 @@ import Link from "next/link";
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="px-6 py-6 md:px-12 flex items-center justify-between">
+      <header className="flex flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6 md:px-12">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-[var(--accent-1)] text-black flex items-center justify-center font-semibold">
             NL
           </div>
           <span className="text-lg tracking-tight">Neon Ledger</span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <Link
             href="/auth"
-            className="text-sm text-white/70 hover:text-white transition-colors"
+            className="inline-flex min-h-11 items-center text-sm text-white/70 transition-colors hover:text-white"
           >
             Sign in
           </Link>
           <Link
             href="/auth"
-            className="rounded-full px-5 py-2 bg-[var(--accent-1)] text-[#0D0D0D] font-semibold hover:bg-[var(--accent-3)] hover:text-white transition-colors"
+            className="inline-flex min-h-11 items-center rounded-full bg-[var(--accent-1)] px-4 py-2 font-semibold text-[#0D0D0D] transition-colors hover:bg-[var(--accent-3)] hover:text-white sm:px-5"
           >
             Get started
           </Link>
@@ -27,8 +27,8 @@ export default function Home() {
       </header>
 
       <main className="flex-1 px-6 md:px-12 py-12 grid gap-12 lg:grid-cols-[1.1fr_0.9fr] items-center">
-        <div className="space-y-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 text-xs uppercase tracking-[0.3em] text-white/70">
+        <div className="min-w-0 space-y-8">
+          <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-white/70 sm:text-xs sm:tracking-[0.3em]">
             Daily clarity for monthly goals
           </div>
           <h1 className="text-4xl md:text-6xl font-semibold leading-tight">
@@ -41,7 +41,7 @@ export default function Home() {
           <div className="flex flex-wrap gap-4">
             <Link
               href="/auth"
-              className="rounded-full px-6 py-3 bg-[var(--accent-1)] text-[#0D0D0D] font-semibold hover:bg-[var(--accent-3)] hover:text-white transition-colors"
+              className="inline-flex min-h-11 items-center rounded-full bg-[var(--accent-1)] px-6 py-3 font-semibold text-[#0D0D0D] transition-colors hover:bg-[var(--accent-3)] hover:text-white"
             >
               Start tracking
             </Link>
@@ -62,7 +62,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="glass rounded-3xl p-8 border border-white/10 shadow-[var(--shadow)]">
+        <div className="glass min-w-0 rounded-3xl border border-white/10 p-8 shadow-[var(--shadow)]">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold">This month</h2>
             <span className="text-xs uppercase tracking-[0.2em] text-white/60">Feb 2026</span>

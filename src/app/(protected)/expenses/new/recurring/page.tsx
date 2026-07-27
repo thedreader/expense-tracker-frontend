@@ -48,14 +48,13 @@ export default function RecurringExpensePage() {
 
   const handleCreate = async (formData: FormData) => {
     const categoryId = String(formData.get("category") || "");
-    const category = categories.find((item) => item._id === categoryId);
     const budgetType = getBudgetType(String(formData.get("budgetType") || ""));
     const nameValue = String(formData.get("name") || "").trim();
     const endDateValue = String(formData.get("endDate") || "").trim();
 
     try {
       await reccuringCharge({
-        name: nameValue || category?.name || "",
+        name: nameValue,
         amount: Number(formData.get("amount") || 0),
         category: categoryId,
         budgetType,
@@ -83,15 +82,15 @@ export default function RecurringExpensePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
+        <div className="min-w-0">
           <p className="text-sm text-white/60">Expenses</p>
-          <h1 className="text-3xl font-semibold">Set up recurring charge</h1>
+          <h1 className="break-words text-3xl font-semibold">Set up recurring charge</h1>
           <p className="mt-2 max-w-xl text-sm text-white/60">
             This is a separate recurring flow. Quick-add has not created an expense.
           </p>
         </div>
-        <Link href="/expenses/new">
+        <Link href="/expenses/new" className="shrink-0">
           <Button type="button" variant="ghost">Back</Button>
         </Link>
       </div>

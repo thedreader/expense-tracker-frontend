@@ -2,6 +2,8 @@ import type { BudgetBucketKey, Category, Expense } from "@/types";
 
 export const DEFAULT_BUDGET_TYPE: BudgetBucketKey = "wants";
 
+export type MonthWeek = 1 | 2 | 3 | 4;
+
 export function formatCurrency(amount: number): string {
   return amount.toLocaleString("en-IN", {
     style: "currency",
@@ -16,6 +18,48 @@ export function getTodayInputDate(): string {
   const month = String(today.getMonth() + 1).padStart(2, "0");
   const day = String(today.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+export function getMonthWeek(date: Date): MonthWeek {
+  return Math.min(Math.floor((date.getDate() - 1) / 7) + 1, 4) as MonthWeek;
+}
+
+export function getMonthWeekStart(
+  year: number,
+  monthIndex: number,
+  week: MonthWeek,
+): Date {
+  return new Date(year, monthIndex, (week - 1) * 7 + 1);
+}
+
+export function getMonthWeekEnd(
+  year: number,
+  monthIndex: number,
+  week: MonthWeek,
+): Date {
+  const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+  const day = week === 4 ? lastDay : Math.min(week * 7, lastDay);
+  return new Date(year, monthIndex, day);
+}
+
+export function getMonthWeekRange(date: Date) {
+  const week = getMonthWeek(date);
+  return {
+    week,
+    start: getMonthWeekStart(date.getFullYear(), date.getMonth(), week),
+    end: getMonthWeekEnd(date.getFullYear(), date.getMonth(), week),
+  };
+}
+
+export function shiftMonthWeek(date: Date, amount: number): Date {
+  const week = getMonthWeek(date);
+  const nextWeek =
+    amount > 0 && week === 4
+      ? 1
+      : amount < 0 && week === 1
+        ? 4
+        : week;
+  return getMonthWeekStart(date.getFullYear(), date.getMonth() + amount, nextWeek);
 }
 
 export function toInputDate(value?: string | null): string {

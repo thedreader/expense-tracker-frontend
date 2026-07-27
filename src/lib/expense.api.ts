@@ -6,13 +6,18 @@ type DateFilterParams = {
   endDate?: string;
 };
 
-type ExpensePayload = {
-  name?: string;
+export type ExpenseInput = {
+  name: string;
   amount: number;
   description?: string;
   category: string;
   date: string;
   budgetType?: "needs" | "wants" | "investments";
+};
+
+type BulkExpenseResponse = {
+  created: Expense[];
+  failed: { index: number; reason: string }[];
 };
 
 type UpdateExpensePayload = {
@@ -24,7 +29,7 @@ type UpdateExpensePayload = {
   budgetType?: "needs" | "wants" | "investments";
 };
 
-type ReccuringChargePayload = ExpensePayload & {
+type ReccuringChargePayload = ExpenseInput & {
   frequency: string;
   interval: number;
   startDate: string;
@@ -58,10 +63,17 @@ export function getExpensesByCategory(category: string, params?: DateFilterParam
   });
 }
 
-export function createExpense(payload: ExpensePayload) {
+export function createExpense(payload: ExpenseInput) {
   return apiClient<ApiMessage>("/expenses", {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export function createExpenses(expenses: ExpenseInput[]) {
+  return apiClient<BulkExpenseResponse>("/expenses", {
+    method: "POST",
+    body: JSON.stringify({ expenses }),
   });
 }
 

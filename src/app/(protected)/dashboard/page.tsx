@@ -132,7 +132,7 @@ export default function DashboardPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         <StatCard
           label="Total this month"
           value={formatCurrency(totalMonthly)}
@@ -159,7 +159,7 @@ export default function DashboardPage() {
       <Card>
         <h2 className="text-lg font-semibold mb-4">Budget status</h2>
         {hasAnyBudgetBucket ? (
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 lg:grid-cols-3">
             {budgetBuckets.map((bucket) => {
               const bucketStatus = budgetStatus?.[bucket.key];
               return (
@@ -230,13 +230,13 @@ export default function DashboardPage() {
                   key={expense._id}
                   className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
                 >
-                  <div>
-                    <div className="text-sm font-semibold">{expense.name}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="break-words text-sm font-semibold">{expense.name}</div>
                     <div className="text-xs text-white/60">
                       {formatExpenseDate(expense.date)}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <Badge>{expense.category}</Badge>
                     <Badge className="text-white/65">{expense.budgetType}</Badge>
                   </div>
@@ -267,8 +267,8 @@ export default function DashboardPage() {
                   return (
                     <div key={category} className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span>{category}</span>
-                        <span className="text-white/60">
+                        <span className="min-w-0 break-words">{category}</span>
+                        <span className="shrink-0 text-white/60">
                           {total ? formatCurrency(total) : "--"}
                         </span>
                       </div>

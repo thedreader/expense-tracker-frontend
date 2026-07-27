@@ -218,7 +218,7 @@ export default function SettingsPage() {
               onChange={(event) =>
                 setProfileForm((prev) => ({ ...prev, name: event.target.value }))
               }
-              className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+              className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
             />
           </div>
           <div className="space-y-2">
@@ -231,7 +231,7 @@ export default function SettingsPage() {
               onChange={(event) =>
                 setProfileForm((prev) => ({ ...prev, email: event.target.value }))
               }
-              className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white focus:border-[var(--accent-1)] focus:outline-none"
+              className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white focus:border-[var(--accent-1)] focus:outline-none"
             />
           </div>
           <div className="space-y-2">
@@ -245,7 +245,7 @@ export default function SettingsPage() {
                 setProfileForm((prev) => ({ ...prev, password: event.target.value }))
               }
               placeholder="Leave blank to keep current"
-              className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
+              className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
             />
           </div>
           <Button type="submit" disabled={saving}>Save changes</Button>
@@ -260,7 +260,7 @@ export default function SettingsPage() {
             value={newCategoryName}
             onChange={(event) => setNewCategoryName(event.target.value)}
             placeholder="Add new category"
-            className="h-11 flex-1 rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
+            className="h-11 flex-1 rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
           />
           <Button type="submit" disabled={saving}>Add category</Button>
         </form>
@@ -275,8 +275,8 @@ export default function SettingsPage() {
                 className="rounded-xl border border-white/10 bg-white/5 p-3 transition-all duration-200 hover:border-white/20"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-white">{category.name}</span>
+                  <div className="min-w-0 flex-1">
+                    <span className="break-words text-sm text-white">{category.name}</span>
                   </div>
                   <Button
                     type="button"
@@ -295,7 +295,7 @@ export default function SettingsPage() {
 
       <Card>
         <h2 className="text-lg font-semibold mb-4">Budget buckets</h2>
-        <form onSubmit={handleUpdateBudget} className="grid gap-4 md:grid-cols-3">
+        <form onSubmit={handleUpdateBudget} className="grid gap-4 lg:grid-cols-3">
           <div className="space-y-2">
             <label htmlFor="needs" className="text-sm text-white/80">Needs</label>
             <input
@@ -309,7 +309,7 @@ export default function SettingsPage() {
                 setBudgetForm((prev) => ({ ...prev, needs: event.target.value }))
               }
               placeholder="Optional"
-              className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
+              className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
             />
           </div>
           <div className="space-y-2">
@@ -325,7 +325,7 @@ export default function SettingsPage() {
                 setBudgetForm((prev) => ({ ...prev, wants: event.target.value }))
               }
               placeholder="Optional"
-              className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
+              className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
             />
           </div>
           <div className="space-y-2">
@@ -341,7 +341,7 @@ export default function SettingsPage() {
                 setBudgetForm((prev) => ({ ...prev, investments: event.target.value }))
               }
               placeholder="Optional"
-              className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-sm text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
+              className="h-11 w-full rounded-xl border border-white/10 bg-[var(--panel-2)] px-4 text-base text-white placeholder:text-white/40 focus:border-[var(--accent-1)] focus:outline-none"
             />
           </div>
           <div className="md:col-span-3">

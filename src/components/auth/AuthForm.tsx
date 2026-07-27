@@ -138,7 +138,7 @@ export function AuthForm() {
           type="button"
           onClick={() => setMode("login")}
           aria-pressed={mode === "login"}
-          className={`flex-1 rounded-full px-4 py-2 text-sm transition-colors ${
+          className={`min-h-11 flex-1 rounded-full px-4 py-2 text-sm transition-colors ${
             mode === "login" ? "text-[#0D0D0D]" : "text-white/70 hover:text-white"
           } relative z-10`}
         >
@@ -148,7 +148,7 @@ export function AuthForm() {
           type="button"
           onClick={() => setMode("register")}
           aria-pressed={mode === "register"}
-          className={`flex-1 rounded-full px-4 py-2 text-sm transition-colors ${
+          className={`min-h-11 flex-1 rounded-full px-4 py-2 text-sm transition-colors ${
             mode === "register" ? "text-[#0D0D0D]" : "text-white/70 hover:text-white"
           } relative z-10`}
         >
@@ -191,7 +191,7 @@ export function AuthForm() {
                 aria-invalid={Boolean(fieldErrors.name)}
               />
               {fieldErrors.name ? (
-                <p className="text-xs text-[var(--accent-3)]">{fieldErrors.name}</p>
+                <p className="text-sm text-[var(--accent-3)]">{fieldErrors.name}</p>
               ) : null}
             </div>
           </div>
@@ -205,7 +205,7 @@ export function AuthForm() {
               aria-invalid={Boolean(fieldErrors.email)}
             />
             {fieldErrors.email ? (
-              <p className="text-xs text-[var(--accent-3)]">{fieldErrors.email}</p>
+              <p className="text-sm text-[var(--accent-3)]">{fieldErrors.email}</p>
             ) : null}
           </div>
           <div className="space-y-2">
@@ -218,7 +218,7 @@ export function AuthForm() {
               aria-invalid={Boolean(fieldErrors.password)}
             />
             {fieldErrors.password ? (
-              <p className="text-xs text-[var(--accent-3)]">{fieldErrors.password}</p>
+              <p className="text-sm text-[var(--accent-3)]">{fieldErrors.password}</p>
             ) : null}
           </div>
           <Button type="submit" className="w-full" disabled={loading}>

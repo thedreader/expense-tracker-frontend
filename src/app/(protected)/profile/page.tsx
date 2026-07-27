@@ -84,11 +84,11 @@ export default function ProfilePage() {
           <div className="space-y-3">
             <div>
               <div className="text-xs uppercase tracking-[0.3em] text-white/40">Name</div>
-              <div className="text-white text-lg">{user.name}</div>
+              <div className="break-words text-white text-lg">{user.name}</div>
             </div>
             <div>
               <div className="text-xs uppercase tracking-[0.3em] text-white/40">Email</div>
-              <div className="text-white text-lg">{user.email}</div>
+              <div className="break-all text-white text-lg">{user.email}</div>
             </div>
           </div>
         </Card>
@@ -104,7 +104,7 @@ export default function ProfilePage() {
               <div className="text-sm text-white/60">Latest expense</div>
               {lastExpense ? (
                 <div className="mt-2">
-                  <div className="text-sm font-semibold">{lastExpense.name}</div>
+                  <div className="break-words text-sm font-semibold">{lastExpense.name}</div>
                   <div className="text-xs text-white/60">
                     {formatExpenseDate(lastExpense.date)}
                   </div>
