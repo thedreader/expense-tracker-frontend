@@ -436,7 +436,7 @@ export default function ExpensesPage() {
         type="button"
         onClick={openNewExpense}
         aria-label="Add expense"
-        className="fixed bottom-24 right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent-1)] text-[#0D0D0D] shadow-[0_10px_30px_rgba(0,255,133,0.25)] transition-transform hover:scale-105 md:bottom-8 md:right-8"
+        className="fixed bottom-[calc(10rem+env(safe-area-inset-bottom))] right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent-1)] text-[#0D0D0D] shadow-[0_10px_30px_rgba(0,255,133,0.25)] transition-transform hover:scale-105 md:bottom-[6.5rem] md:right-8"
       >
         <PlusIcon />
       </button>
