@@ -13,8 +13,12 @@ type ParseExpenseResponse = {
 };
 
 export function parseExpenseText(text: string) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20_000);
+
   return apiClient<ParseExpenseResponse>("/ai/parse-expenses", {
     method: "POST",
     body: JSON.stringify({ text }),
-  });
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timer));
 }

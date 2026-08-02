@@ -187,9 +187,13 @@ export default function AiExpenseModal({
       setDrafts(draftEntries);
       setStep("drafts");
     } catch (err: unknown) {
-      const error = err as { status?: number; message?: string };
-      if (error.status === 429) {
+      const error = err as { status?: number; message?: string; name?: string };
+      if (error.name === "AbortError") {
+        setInputError("Taking too long — please try again with fewer expenses.");
+      } else if (error.status === 429) {
         setInputError("AI is rate-limited, try again in a bit.");
+      } else if (error.status === 504) {
+        setInputError("AI took too long — please try again.");
       } else {
         setInputError(error.message || "Something went wrong. Try again.");
       }
